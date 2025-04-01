@@ -1,20 +1,18 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.utils import secure_filename
+from image_recognition import predict_image  # Import the image recognition function
 
 app = Flask(__name__)
 
-# Set upload folder
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
-    """Check if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
@@ -36,7 +34,11 @@ def upload_file():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            return redirect(url_for('uploaded_file', filename=filename))
+
+            # Perform image recognition
+            predictions = predict_image(file_path)
+
+            return render_template('result.html', filename=filename, predictions=predictions)
 
     return render_template('upload.html')
 
