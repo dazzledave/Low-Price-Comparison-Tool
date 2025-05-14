@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Feedback Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Feedback Overview</h1>
+
+    {% if feedback_data %}
+        <table border="1" cellpadding="10" style="color: white;">
+            <tr>
+                <th>Image</th>
+                <th>Predicted Label</th>
+                <th>User Feedback</th>
+            </tr>
+            {% for image_name, label, feedback in feedback_data %}
+                <tr>
+                    <td>
+                        <img src="{{ url_for('static', filename='uploads/' + image_name) }}" alt="{{ image_name }}" width="100">
+                        <br>{{ image_name }}
+                    </td>
+                    <td>{{ label }}</td>
+                    <td>{{ feedback }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No feedback entries yet.</p>
+    {% endif %}
+
+    <br>
+    <a href="{{ url_for('home') }}">Back to Home</a>
+</body>
+</html>
