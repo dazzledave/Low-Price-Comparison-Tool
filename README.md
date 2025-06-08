@@ -73,12 +73,6 @@ http://localhost:5000
 
 Contributions are welcome! Feel free to submit issues and pull requests.
 
-## 📝 License
-
-[Your License Here]
-
-## 🙏 Acknowledgments
-
 - Built for Ghanaian e-commerce
 - Supports local businesses and smart shopping
 - Helps consumers find the best deals 
