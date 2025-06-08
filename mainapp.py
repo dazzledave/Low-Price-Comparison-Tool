@@ -1,12 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
-from image_recognition import predict_image  # Import the image recognition function
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+from image_recognition import predict_image
 from jumia_scraper import scrape_jumia
-from tonaton_scraper import scrape_tonaton
-
-
+from melcom_scraper import scrape_melcom
+import time
 
 app = Flask(__name__)
 
@@ -14,6 +14,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 DATABASE = 'feedback.db'
+SCRAPING_TIMEOUT = 30  # seconds
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -39,6 +40,42 @@ def allowed_file(filename):
     """Check if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def scrape_with_timeout(scraper_func, query, max_results=5):
+    """Run a scraper with timeout"""
+    try:
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(scraper_func, query, max_results)
+            return future.result(timeout=SCRAPING_TIMEOUT)
+    except (TimeoutError, Exception) as e:
+        print(f"Error in {scraper_func.__name__}: {str(e)}")
+        return []
+
+def scrape_all_sources(query):
+    """Scrape all sources concurrently using ThreadPoolExecutor with timeout."""
+    scrapers = {
+        'products': (scrape_jumia, []),
+        'melcom_products': (scrape_melcom, [])
+    }
+    
+    results = {}
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Start all scraping tasks
+        future_to_source = {
+            executor.submit(scrape_with_timeout, func, query): source
+            for source, (func, _) in scrapers.items()
+        }
+        
+        # Process results as they complete
+        for future in as_completed(future_to_source):
+            source = future_to_source[future]
+            try:
+                results[source] = future.result()
+            except Exception as e:
+                print(f"Error scraping {source}: {str(e)}")
+                results[source] = []
+    
+    return results
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -50,36 +87,51 @@ def upload_file():
             return redirect(request.url)
         
         file = request.files['file']
-
         if file.filename == '':
             return redirect(request.url)
 
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            try:
+                # Save and process the image
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
 
-            # Call AI model to recognize the image
-            label, confidence = predict_image(file_path)
-
-            return redirect(url_for('uploaded_file', filename=filename, label=label, confidence=confidence))
+                # Get image recognition results
+                label, confidence = predict_image(file_path)
+                
+                # Start concurrent scraping with timeout
+                scraping_results = scrape_all_sources(label)
+                
+                return render_template(
+                    'result.html',
+                    filename=filename,
+                    label=label,
+                    confidence=confidence,
+                    **scraping_results
+                )
+            except Exception as e:
+                print(f"Error processing upload: {str(e)}")
+                return render_template('error.html', error="Error processing your request. Please try again.")
 
     return render_template('upload.html')
 
 @app.route('/uploaded/<filename>/<label>/<confidence>')
 def uploaded_file(filename, label, confidence):
-    # Scrape both Jumia and Tonaton
-    jumia_products = scrape_jumia(label)
-    tonaton_products = scrape_tonaton(label)
-
-    return render_template(
-        'result.html',
-        filename=filename,
-        label=label,
-        confidence=confidence,
-        products=jumia_products,
-        tonaton_products=tonaton_products
-    )
+    try:
+        # Scrape all sources concurrently with timeout
+        scraping_results = scrape_all_sources(label)
+        
+        return render_template(
+            'result.html',
+            filename=filename,
+            label=label,
+            confidence=confidence,
+            **scraping_results
+        )
+    except Exception as e:
+        print(f"Error processing request: {str(e)}")
+        return render_template('error.html', error="Error processing your request. Please try again.")
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
@@ -97,7 +149,7 @@ def submit_feedback():
             ''', (image_name, predicted_label, feedback))
             conn.commit()
 
-    return redirect(url_for('home'))  # Redirect back to homepage after submission
+    return redirect(url_for('home'))
 
 @app.route('/admin')
 def admin():
@@ -107,7 +159,6 @@ def admin():
         feedback_data = cursor.fetchall()
     
     return render_template('admin.html', feedback_data=feedback_data)
-
 
 if __name__ == '__main__':
     app.run(debug=True)

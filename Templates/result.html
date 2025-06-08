@@ -1,56 +1,146 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Recognition Results</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Image Recognition Results{% endblock %}
+
+{% block content %}
+<div class="results-container">
     <h1>Image Recognition Results</h1>
 
-    <h2 style="color: #fff;">Uploaded Image:</h2>
-    <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image" width="300">
+    <div class="image-recognition-results">
+        <h2>Uploaded Image:</h2>
+        <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image" width="300">
 
-    <p><strong>Item:</strong> {{ label }}</p>
-    <p><strong>Confidence:</strong> {{ confidence }}%</p>
+        <p><strong>Item:</strong> {{ label }}</p>
+        <p><strong>Confidence:</strong> {{ confidence }}%</p>
 
-    <form action="{{ url_for('submit_feedback') }}" method="POST">
-        <input type="hidden" name="filename" value="{{ filename }}">
-        <input type="hidden" name="label" value="{{ label }}">
-        <p>Was this prediction correct?</p>
-        <button type="submit" name="feedback" value="Yes">Yes</button>
-        <button type="submit" name="feedback" value="No">No</button>
-    </form>    
+        <form action="{{ url_for('submit_feedback') }}" method="POST">
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <input type="hidden" name="label" value="{{ label }}">
+            <p>Was this prediction correct?</p>
+            <div class="feedback-buttons">
+                <button type="submit" name="feedback" value="Yes">Yes</button>
+                <button type="submit" name="feedback" value="No">No</button>
+            </div>
+        </form>
 
-    <br>
-    <a href="{{ url_for('upload_file') }}">Upload Another Image</a>
+        <br>
+        <a href="{{ url_for('upload_file') }}" class="btn">Upload Another Image</a>
+    </div>
 
     <hr>
 
-    <h2>Matching Products on Jumia</h2>
-    {% if products %}
-        <ul>
-            {% for product in products %}
-                <li>
+    <div id="loading-container" style="display: block;">
+        <div class="loading-spinner"></div>
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar">
+                <span class="progress-text">0%</span>
+            </div>
+        </div>
+        <p id="loading-status">Searching for the best prices...</p>
+    </div>
+
+    <div id="results-section" style="display: none;">
+        <!-- Jumia Products -->
+        <div id="jumia-container" class="store-container">
+            <h2>Matching Products on Jumia</h2>
+            <div class="product-list">
+            {% if products %}
+                {% for product in products %}
+                <div class="product-item">
+                    {% if product.image %}
+                        <img src="{{ product.image }}" alt="{{ product.name }}">
+                    {% endif %}
                     <strong>{{ product.name }}</strong><br>
                     Price: {{ product.price }}<br>
-                    <a href="{{ product.link }}" target="_blank">View on Jumia</a>
-                </li>
-            {% endfor %}
-        </ul>
-    <h2>Tonaton Results:</h2>
-        <ul>
-            {% for product in tonaton_products %}
-            <li>
-                <strong>{{ product.title }}</strong><br>
-                Price: {{ product.price }}<br>
-                <a href="{{ product.url }}" target="_blank">View Product</a>
-            </li>
-            {% endfor %}
-        </ul>            
-    {% else %}
-        <p>No matching products found.</p>
-    {% endif %}
-</body>
-</html>
+                    <a href="{{ product.link }}" target="_blank" class="btn">View on Jumia</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No matching Jumia products found.</p>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- Melcom Products -->
+        <div id="melcom-container" class="store-container">
+            <h2>Matching Products on Melcom</h2>
+            <div class="product-list">
+            {% if melcom_products %}
+                {% for product in melcom_products %}
+                <div class="product-item">
+                    {% if product.image %}
+                        <img src="{{ product.image }}" alt="{{ product.name }}">
+                    {% endif %}
+                    <strong>{{ product.name }}</strong><br>
+                    Price: {{ product.price }}<br>
+                    <a href="{{ product.link }}" target="_blank" class="btn">View on Melcom</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No matching Melcom products found.</p>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingContainer = document.getElementById('loading-container');
+    const resultsSection = document.getElementById('results-section');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = progressBar.querySelector('.progress-text');
+    const loadingStatus = document.getElementById('loading-status');
+    
+    // Show loading immediately
+    loadingContainer.style.display = 'block';
+    resultsSection.style.display = 'none';
+
+    // Function to check if any products were found
+    function hasProducts() {
+        return Boolean(document.querySelectorAll('.product-item').length);
+    }
+
+    // Function to update progress and status
+    function updateProgress(percent, message) {
+        progressBar.style.width = percent + '%';
+        progressText.textContent = percent + '%';
+        if (message) {
+            loadingStatus.textContent = message;
+        }
+    }
+
+    // Simulate progress while actual scraping happens
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        if (progress < 90) {
+            progress += 20;
+            updateProgress(progress, 
+                progress === 40 ? 'Searching Jumia...' :
+                progress === 80 ? 'Searching Melcom...' :
+                'Processing results...'
+            );
+        }
+    }, 300);
+
+    // After results are ready (or timeout)
+    setTimeout(() => {
+        clearInterval(progressInterval);
+        updateProgress(100, 'Search complete!');
+        
+        setTimeout(() => {
+            loadingContainer.style.display = 'none';
+            resultsSection.style.display = 'block';
+            
+            // Animate each store container
+            document.querySelectorAll('.store-container').forEach((container, index) => {
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        }, 500);
+    }, hasProducts() ? 2000 : 3000);
+});
+</script>
+{% endblock %}

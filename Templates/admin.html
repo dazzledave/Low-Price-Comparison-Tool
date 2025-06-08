@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Feedback Page</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <h1>Feedback Overview</h1>
+{% extends "base.html" %}
 
-    {% if feedback_data %}
-        <table border="1" cellpadding="10" style="color: white;">
+{% block title %}Admin Feedback Page{% endblock %}
+
+{% block content %}
+<h1>Feedback Overview</h1>
+
+{% if feedback_data %}
+    <div class="table-container">
+        <table class="admin-table">
             <tr>
                 <th>Image</th>
                 <th>Predicted Label</th>
@@ -26,11 +24,11 @@
                 </tr>
             {% endfor %}
         </table>
-    {% else %}
-        <p>No feedback entries yet.</p>
-    {% endif %}
+    </div>
+{% else %}
+    <p>No feedback entries yet.</p>
+{% endif %}
 
-    <br>
-    <a href="{{ url_for('home') }}">Back to Home</a>
-</body>
-</html>
+<br>
+<a href="{{ url_for('home') }}" class="btn">Back to Home</a>
+{% endblock %}

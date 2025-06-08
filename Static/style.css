@@ -1,38 +1,292 @@
+/* Base styles and CSS variables */
+:root {
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --container-bg: #ffffff;
+    --btn-bg: #007bff;
+    --btn-hover: #0056b3;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --link-color: #007bff;
+    --product-bg: #ffffff;
+    --icon-color: #333;
+}
+
+/* Dark mode variables */
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --container-bg: #2d2d2d;
+    --btn-bg: #0056b3;
+    --btn-hover: #003d82;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --link-color: #66b0ff;
+    --product-bg: #2d2d2d;
+    --icon-color: #ffffff;
+}
+
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background: #131722;
+    background: var(--bg-color);
     margin: 0;
-    padding: 0;
+    padding: 20px;
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
-    width: 50%;
+    width: 80%;
+    max-width: 1200px;
     margin: auto;
-    margin-top: 10%;
-    background: #303030;
+    margin-top: 2%;
+    background: var(--container-bg);
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 4px 8px var(--shadow-color);
+    transition: background-color 0.3s ease;
 }
 
-h1 {
-    color: #ffff;
+/* Theme toggle button */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
 }
 
-p {
-    color: #ffff;
+#theme-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--container-bg);
+    color: var(--icon-color);
+    cursor: pointer;
+    padding: 8px;
+    box-shadow: 0px 2px 4px var(--shadow-color);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+#theme-toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Theme toggle icons */
+#theme-toggle-btn .sun-icon,
+#theme-toggle-btn .moon-icon {
+    position: absolute;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#theme-toggle-btn .sun-icon {
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+#theme-toggle-btn .moon-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+[data-theme="dark"] #theme-toggle-btn .sun-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+[data-theme="dark"] #theme-toggle-btn .moon-icon {
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+/* Button styles */
 .btn {
     display: inline-block;
     padding: 10px 20px;
-    background: #007bff;
+    background: var(--btn-bg);
     color: white;
     text-decoration: none;
     border-radius: 5px;
     margin-top: 20px;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
 }
 
 .btn:hover {
-    background: #0056b3;
+    background: var(--btn-hover);
+}
+
+/* Product list styles */
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.product-item {
+    background: var(--product-bg);
+    padding: 15px;
+    border-radius: 10px;
+    width: 280px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0px 2px 4px var(--shadow-color);
+}
+
+.product-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 4px 8px var(--shadow-color);
+}
+
+.product-item img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.product-item a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.product-item a:hover {
+    text-decoration: underline;
+}
+
+/* Loading animation styles */
+#loading-container, #upload-loading {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: var(--container-bg);
+    border-radius: 10px;
+    box-shadow: 0px 2px 4px var(--shadow-color);
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 3px solid var(--shadow-color);
+    border-radius: 50%;
+    border-top-color: var(--btn-bg);
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#loading-status, #upload-status {
+    color: var(--text-color);
+    font-size: 1.1em;
+    margin: 10px 0;
+}
+
+/* Progress bar */
+.progress-container {
+    width: 100%;
+    background-color: var(--container-bg);
+    border-radius: 5px;
+    padding: 3px;
+    margin: 10px 0;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background-color: var(--btn-bg);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-text {
+    position: absolute;
+    right: 10px;
+    color: white;
+    font-size: 12px;
+    line-height: 20px;
+}
+
+/* Upload form styles */
+.upload-form {
+    margin: 20px 0;
+}
+
+.form-group {
+    margin: 15px 0;
+}
+
+#file-input {
+    display: block;
+    margin: 10px auto;
+    padding: 10px;
+    border: 2px dashed var(--shadow-color);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#file-input:hover {
+    border-color: var(--btn-bg);
+}
+
+#upload-btn:disabled {
+    background-color: var(--shadow-color);
+    cursor: not-allowed;
+}
+
+/* Feedback buttons */
+.feedback-buttons {
+    margin: 20px 0;
+}
+
+.feedback-buttons button {
+    margin: 0 10px;
+    padding: 8px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    background: var(--btn-bg);
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.feedback-buttons button:hover {
+    background: var(--btn-hover);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--shadow-color);
+    margin: 30px 0;
+}
+
+/* Error page styles */
+.error-container {
+    text-align: center;
+    background: var(--container-bg);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    max-width: 600px;
+    margin: 40px auto;
+}
+
+.error-container h1 {
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+.error-container p {
+    color: var(--text-color);
+    margin-bottom: 30px;
 }

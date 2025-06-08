@@ -1,23 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Image</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Upload an Image</h1>
-        <p>Select an image of a product, and we'll process it.</p>
+{% extends "base.html" %}
 
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept="image/*" required>
-            <button type="submit" class="btn">Upload</button>
-        </form>
+{% block title %}Upload Image{% endblock %}
 
-        <br>
-        <a href="/" class="btn">Back to Home</a>
+{% block content %}
+<div class="upload-container">
+    <h1>Upload an Image</h1>
+    <p>Select an image of a product, and we'll process it.</p>
+
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <input type="file" name="file" id="file-input" accept="image/*" required>
+            <button type="submit" class="btn" id="upload-btn">Upload</button>
+        </div>
+    </form>
+
+    <div id="upload-loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="progress-container">
+            <div id="upload-progress-bar" class="progress-bar">
+                <span class="progress-text">0%</span>
+            </div>
+        </div>
+        <p id="upload-status">Uploading and processing image...</p>
     </div>
-</body>
-</html>
+
+    <br>
+    <a href="/" class="btn">Back to Home</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('upload-form');
+    const loadingDiv = document.getElementById('upload-loading');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressText = progressBar.querySelector('.progress-text');
+    const statusText = document.getElementById('upload-status');
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+
+    // Disable upload button if no file selected
+    fileInput.addEventListener('change', function() {
+        uploadBtn.disabled = !this.files.length;
+    });
+
+    form.addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        // Show loading animation immediately
+        form.style.display = 'none';
+        loadingDiv.style.display = 'block';
+
+        // Simulate upload progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            if (progress < 90) {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                progressText.textContent = progress + '%';
+                
+                // Update status messages
+                if (progress === 30) {
+                    statusText.textContent = 'Analyzing image...';
+                } else if (progress === 60) {
+                    statusText.textContent = 'Processing results...';
+                }
+            }
+        }, 300);
+
+        // Clear interval after form submission (browser will navigate to new page)
+        setTimeout(() => clearInterval(progressInterval), 5000);
+    });
+});
+</script>
+{% endblock %}
