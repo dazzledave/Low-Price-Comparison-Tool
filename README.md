@@ -2,7 +2,7 @@
 
 A web application that helps you find the best prices for products across major Ghanaian e-commerce platforms like Jumia and Melcom.
 
-## ✨ Features
+## What It Can Do?
 
 - **Multi-Store Price Comparison**: Compare prices across Jumia, Melcom, and more
 - **Image Search**: Upload a product image to find similar items
@@ -12,12 +12,12 @@ A web application that helps you find the best prices for products across major 
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### What You Need To Run It:
 
 - Python 3.8 or higher
 - pip (Python package manager)
 
-### Installation
+### How To Use
 
 1. Clone the repository:
 ```bash
@@ -25,7 +25,7 @@ git clone [your-repository-url]
 cd [repository-name]
 ```
 
-2. Install the required dependencies:
+2. Install the required packages:
 ```bash
 pip install -r requirements.txt
 ```
@@ -68,11 +68,3 @@ http://localhost:5000
 - For best results, use specific product names
 - Allow some time for image search processing
 - Check multiple stores for the best deals
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to submit issues and pull requests.
-
-- Built for Ghanaian e-commerce
-- Supports local businesses and smart shopping
-- Helps consumers find the best deals 
