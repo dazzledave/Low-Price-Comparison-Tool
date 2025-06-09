@@ -17,7 +17,7 @@ A web application that helps you find the best prices for products across major 
 - Python 3.8 or higher
 - pip (Python package manager)
 
-### How To Use
+### How To Run
 
 1. Clone the repository:
 ```bash
@@ -40,7 +40,7 @@ python app.py
 http://localhost:5000
 ```
 
-## 🎯 How to Use
+##  How to Use
 
 1. **Text Search**:
    - Enter your product name in the search bar
@@ -51,10 +51,6 @@ http://localhost:5000
    - Select a product image from your device
    - Wait for the results to load
 
-3. **Theme Toggle**:
-   - Click the theme toggle button in the navigation bar to switch between dark and light modes
-   - Your preference will be saved for future visits
-
 ## 🛠️ Technical Features
 
 - Parallel processing for faster scraping
@@ -63,7 +59,7 @@ http://localhost:5000
 - Error handling and timeout management
 - Responsive design for all screen sizes
 
-## 💡 Tips
+##  Tips
 
 - For best results, use specific product names
 - Allow some time for image search processing
