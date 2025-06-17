@@ -1,30 +1,58 @@
 {% extends "base.html" %}
 
-{% block title %}Image Recognition Results{% endblock %}
+{% block title %}Search Results{% endblock %}
 
 {% block content %}
 <div class="results-container">
-    <h1>Image Recognition Results</h1>
+    <h1>Search Results</h1>
 
-    <div class="image-recognition-results">
-        <h2>Uploaded Image:</h2>
-        <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image" width="300">
+    <div class="search-results">
+        {% if filename %}
+        <div class="image-recognition-results">
+            <h2>Uploaded Image:</h2>
+            <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image" width="300">
+        </div>
+        {% endif %}
 
-        <p><strong>Item:</strong> {{ label }}</p>
-        <p><strong>Confidence:</strong> {{ confidence }}%</p>
+        <div class="search-details">
+            <h2>{% if filename %}Recognized Item{% else %}Search Query{% endif %}:</h2>
+            <p><strong>Item:</strong> {{ label }}</p>
+            {% if filename %}
+            <p><strong>Confidence:</strong> {{ confidence }}%</p>
+            {% endif %}
 
-        <form action="{{ url_for('submit_feedback') }}" method="POST">
-            <input type="hidden" name="filename" value="{{ filename }}">
-            <input type="hidden" name="label" value="{{ label }}">
-            <p>Was this prediction correct?</p>
-            <div class="feedback-buttons">
-                <button type="submit" name="feedback" value="Yes">Yes</button>
-                <button type="submit" name="feedback" value="No">No</button>
+            {% if filename and (confidence < 70 or not products and not melcom_products) %}
+            <div class="search-suggestion">
+                <p class="suggestion-text">
+                    {% if confidence < 70 %}
+                        The image recognition confidence is low. 
+                    {% else %}
+                        No matching products were found.
+                    {% endif %}
+                    Try searching by text instead:
+                </p>
+                <form action="{{ url_for('search_products') }}" method="POST" class="quick-search-form">
+                    <input type="text" name="query" value="{{ label }}" placeholder="Enter product name...">
+                    <button type="submit" class="btn">Search</button>
+                </form>
             </div>
-        </form>
+            {% endif %}
 
-        <br>
-        <a href="{{ url_for('upload_file') }}" class="btn">Upload Another Image</a>
+            {% if filename %}
+            <form action="{{ url_for('submit_feedback') }}" method="POST">
+                <input type="hidden" name="filename" value="{{ filename }}">
+                <input type="hidden" name="label" value="{{ label }}">
+                <p>Was this prediction correct?</p>
+                <div class="feedback-buttons">
+                    <button type="submit" name="feedback" value="Yes">Yes</button>
+                    <button type="submit" name="feedback" value="No">No</button>
+                </div>
+            </form>
+            {% endif %}
+
+            <br>
+            <a href="{{ url_for('upload_file') }}" class="btn">{% if filename %}Upload Another Image{% else %}New Search{% endif %}</a>
+        </div>
     </div>
 
     <hr>

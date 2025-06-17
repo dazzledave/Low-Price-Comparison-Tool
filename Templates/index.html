@@ -1,7 +1,72 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to the AI Price Comparison Tool</h1>
-<p>Upload an image of a product, and we'll find the best prices for you across different shops!</p>
-<a href="/upload" class="btn">Get Started</a>
+<section class="hero">
+    <h1>Welcome to Pic2Price</h1>
+    <p class="hero-subtitle">Upload a product image or search by text, and we'll find the lowest prices across multiple stores in seconds.</p>
+    <a href="/upload" class="btn btn-primary">Start Comparing Prices</a>
+</section>
+
+<section class="features">
+    <h2>Why Choose Pic2Price?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>AI-Powered</h3>
+            <p>Advanced image recognition technology identifies products instantly</p>
+        </div>
+        <div class="feature-card">
+            <h3>Real-Time Prices</h3>
+            <p>Get up-to-date prices from multiple retailers</p>
+        </div>
+        <div class="feature-card">
+            <h3>Save Money</h3>
+            <p>Find the best deals and save on your purchases</p>
+        </div>
+        <div class="feature-card">
+            <h3>Easy to Use</h3>
+            <p>Simple upload process - just snap and compare</p>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <h2>How Pic2Price Works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Upload Image</h3>
+            <p>Take a photo or upload an image of the product you want to compare</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>AI Analysis</h3>
+            <p>Our AI identifies the product and searches for matches</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Get Results</h3>
+            <p>View prices from different stores and find the best deal</p>
+        </div>
+    </div>
+</section>
+
+<section class="testimonials">
+    <h2>What Our Users Say</h2>
+    <div class="testimonial-grid">
+        <div class="testimonial-card">
+            <p>"Pic2Price saved me over $50 on my last purchase! The tool is incredibly easy to use."</p>
+            <cite>- Sarah M.</cite>
+        </div>
+        <div class="testimonial-card">
+            <p>"I use Pic2Price before every major purchase. It's become an essential part of my shopping routine."</p>
+            <cite>- John D.</cite>
+        </div>
+    </div>
+</section>
+
+<section class="cta">
+    <h2>Ready to Start Saving?</h2>
+    <p>Join thousands of smart shoppers who are already saving money with Pic2Price.</p>
+    <a href="/upload" class="btn btn-primary">Compare Prices Now</a>
+</section>
 {% endblock %}

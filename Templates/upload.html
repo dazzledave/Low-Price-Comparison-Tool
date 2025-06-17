@@ -4,15 +4,31 @@
 
 {% block content %}
 <div class="upload-container">
-    <h1>Upload an Image</h1>
-    <p>Select an image of a product, and we'll process it.</p>
+    <h1>Search for Products</h1>
+    <p>You can either upload an image or search by text.</p>
 
-    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-            <input type="file" name="file" id="file-input" accept="image/*" required>
-            <button type="submit" class="btn" id="upload-btn">Upload</button>
-        </div>
-    </form>
+    <div class="search-tabs">
+        <button class="tab-btn active" data-tab="image-upload">Image Upload</button>
+        <button class="tab-btn" data-tab="text-search">Text Search</button>
+    </div>
+
+    <div id="image-upload" class="search-tab active">
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" name="file" id="file-input" accept="image/*" required>
+                <button type="submit" class="btn" id="upload-btn">Upload</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="text-search" class="search-tab">
+        <form id="search-form" action="/search" method="post">
+            <div class="form-group">
+                <input type="text" name="query" id="search-input" placeholder="Enter product name..." required>
+                <button type="submit" class="btn" id="search-btn">Search</button>
+            </div>
+        </form>
+    </div>
 
     <div id="upload-loading" style="display: none;">
         <div class="loading-spinner"></div>
@@ -31,12 +47,28 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('upload-form');
+    const searchForm = document.getElementById('search-form');
     const loadingDiv = document.getElementById('upload-loading');
     const progressBar = document.getElementById('upload-progress-bar');
     const progressText = progressBar.querySelector('.progress-text');
     const statusText = document.getElementById('upload-status');
     const fileInput = document.getElementById('file-input');
     const uploadBtn = document.getElementById('upload-btn');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const searchTabs = document.querySelectorAll('.search-tab');
+
+    // Tab switching functionality
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all buttons and tabs
+            tabBtns.forEach(b => b.classList.remove('active'));
+            searchTabs.forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding tab
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+    });
 
     // Disable upload button if no file selected
     fileInput.addEventListener('change', function() {
@@ -70,6 +102,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Clear interval after form submission (browser will navigate to new page)
         setTimeout(() => clearInterval(progressInterval), 5000);
+    });
+
+    // Handle text search form submission
+    searchForm.addEventListener('submit', function(e) {
+        const searchInput = document.getElementById('search-input');
+        if (!searchInput.value.trim()) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading animation
+        searchForm.style.display = 'none';
+        loadingDiv.style.display = 'block';
+        statusText.textContent = 'Searching for products...';
     });
 });
 </script>

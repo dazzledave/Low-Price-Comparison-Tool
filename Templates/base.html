@@ -3,10 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Price Comparison{% endblock %}</title>
+    <title>{% block title %}Pic2Price - AI Price Comparison{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <header class="main-header">
+        <div class="header-content">
+            <a href="{{ url_for('home') }}" class="brand">
+                <span class="brand-name">Pic2Price</span>
+                <span class="brand-tagline">Snap. Compare. Save.</span>
+            </a>
+        </div>
+    </header>
+
     <div class="theme-toggle">
         <button id="theme-toggle-btn" aria-label="Toggle dark mode">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -160,5 +160,28 @@ def admin():
     
     return render_template('admin.html', feedback_data=feedback_data)
 
+@app.route('/search', methods=['POST'])
+def search_products():
+    """Handle text-based product search."""
+    query = request.form.get('query', '').strip()
+    
+    if not query:
+        return redirect(url_for('upload_file'))
+    
+    try:
+        # Start concurrent scraping with timeout
+        scraping_results = scrape_all_sources(query)
+        
+        return render_template(
+            'result.html',
+            filename=None,  # No image for text search
+            label=query,    # Use the search query as the label
+            confidence=100, # Full confidence for text search
+            **scraping_results
+        )
+    except Exception as e:
+        print(f"Error processing search: {str(e)}")
+        return render_template('error.html', error="Error processing your search. Please try again.")
+
 if __name__ == '__main__':
     app.run(debug=True)
