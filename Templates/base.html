@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Pic2Price - AI Price Comparison{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Font Awesome for modern icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
     <header class="main-header">
         <div class="header-content">
             <a href="{{ url_for('home') }}" class="brand">
+                <img src="{{ url_for('static', filename='p2p_logo.png') }}" alt="Pic2Price Logo" class="site-logo">
                 <span class="brand-name">Pic2Price</span>
                 <span class="brand-tagline">Snap. Compare. Save.</span>
             </a>

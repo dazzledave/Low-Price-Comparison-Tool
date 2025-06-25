@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -7,7 +11,8 @@ import concurrent.futures
 import time
 import re
 
-SCRAPERAPI_KEY = 'c3b3e179e70c0cab29754d52916fe2af'
+# Use the key from the .env file
+SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY')
 
 def scrape_melcom(query, max_results=5):
     cache = CacheManager()

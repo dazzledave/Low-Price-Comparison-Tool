@@ -78,7 +78,7 @@
                 {% endif %}
                 <div class="best-deal-details">
                     <h3>{{ cheapest_item.name }}</h3>
-                    <p class="price">GH₵ {{ cheapest_item.price_display }}</p>
+                    <p class="price">{{ cheapest_item.price }}</p>
                     <p class="store">Available at {{ cheapest_item.store }}</p>
                     <a href="{{ cheapest_item.link }}" target="_blank" class="btn btn-primary">View Deal</a>
                 </div>
@@ -92,17 +92,26 @@
 
         <!-- Jumia Products -->
         <div id="jumia-container" class="store-container">
-            <h2>Matching Products on Jumia</h2>
-            <div class="product-list">
+            <div class="store-header">
+                <span class="store-icon"><i class="fa-solid fa-store"></i></span>
+                <span class="store-title">Jumia ({{ products|length }} products)</span>
+            </div>
+            <div class="product-card-grid">
             {% if products %}
                 {% for product in products %}
-                <div class="product-item {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Jumia' %}cheapest-item{% endif %}">
-                    {% if product.image %}
-                        <img src="{{ product.image }}" alt="{{ product.name }}">
-                    {% endif %}
-                    <strong>{{ product.name }}</strong><br>
-                    Price: {{ product.price }}<br>
-                    <a href="{{ product.link }}" target="_blank" class="btn">View on Jumia</a>
+                <div class="product-card {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Jumia' %}cheapest-item{% elif cheapest_jumia and product.name == cheapest_jumia.name and product.price == cheapest_jumia.price %}store-cheapest{% endif %}">
+                    <div class="product-image-wrap">
+                        {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="no-image">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
+                        <div class="product-price-badge">GH₵ {{ product.price }}</div>
+                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                    </div>
                 </div>
                 {% endfor %}
             {% else %}
@@ -113,21 +122,60 @@
 
         <!-- Melcom Products -->
         <div id="melcom-container" class="store-container">
-            <h2>Matching Products on Melcom</h2>
-            <div class="product-list">
+            <div class="store-header">
+                <span class="store-icon"><i class="fa-solid fa-store"></i></span>
+                <span class="store-title">Melcom ({{ melcom_products|length }} products)</span>
+            </div>
+            <div class="product-card-grid">
             {% if melcom_products %}
                 {% for product in melcom_products %}
-                <div class="product-item {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Melcom' %}cheapest-item{% endif %}">
-                    {% if product.image %}
-                        <img src="{{ product.image }}" alt="{{ product.name }}">
-                    {% endif %}
-                    <strong>{{ product.name }}</strong><br>
-                    Price: {{ product.price }}<br>
-                    <a href="{{ product.link }}" target="_blank" class="btn">View on Melcom</a>
+                <div class="product-card {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Melcom' %}cheapest-item{% elif cheapest_melcom and product.name == cheapest_melcom.name and product.price == cheapest_melcom.price %}store-cheapest{% endif %}">
+                    <div class="product-image-wrap">
+                        {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="no-image">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
+                        <div class="product-price-badge">GH₵ {{ product.price }}</div>
+                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                    </div>
                 </div>
                 {% endfor %}
             {% else %}
                 <p>No matching Melcom products found.</p>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- CompuGhana Products -->
+        <div id="compughana-container" class="store-container">
+            <div class="store-header">
+                <span class="store-icon"><i class="fa-solid fa-store"></i></span>
+                <span class="store-title">CompuGhana ({{ compughana_products|length }} products)</span>
+            </div>
+            <div class="product-card-grid">
+            {% if compughana_products %}
+                {% for product in compughana_products %}
+                <div class="product-card {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'CompuGhana' %}cheapest-item{% elif cheapest_compughana and product.name == cheapest_compughana.name and product.price == cheapest_compughana.price %}store-cheapest{% endif %}">
+                    <div class="product-image-wrap">
+                        {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="no-image">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
+                        <div class="product-price-badge">{{ product.price }}</div>
+                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No matching CompuGhana products found.</p>
             {% endif %}
             </div>
         </div>

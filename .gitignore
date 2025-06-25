@@ -13,3 +13,49 @@ Thumbs.db
 
 # Ignore environment variables
 .env
+
+# Ignore Python bytecode
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore test cache and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ignore SQLite and other database files
+*.db
+*.sqlite3
+
+# Ignore cache and search cache
+cache_manager.pyc
+search_cache/
+
+# Ignore static user files
+Static/uploads/
+Static/*.log
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore environment variables
+.env
+
+# Ignore debug and temp files
+*.bak
+*.tmp
+melcom_debug*.html
+
+# Ignore CompuGhana debug HTML files
+compughana_debug_*.html
+
+#Ignore test files
+test_*.py

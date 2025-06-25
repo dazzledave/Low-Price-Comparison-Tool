@@ -1,10 +1,16 @@
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 import requests
 from bs4 import BeautifulSoup
 from cache_manager import CacheManager
 import concurrent.futures
 import time
-import os
 import re
+
+# Use the key from the .env file
+SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY')
 
 def scrape_jumia(query, max_results=5):
     cache = CacheManager()
@@ -15,9 +21,8 @@ def scrape_jumia(query, max_results=5):
         print("Returning cached Jumia results")
         return cached_results
 
-    # Get API key from environment variable or use default
-    SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY', 'c3b3e179e70c0cab29754d52916fe2af')
-    
+    # Use the key from the .env file
+    # SCRAPERAPI_KEY is already set above
     try:
         results = _scraper_api_request(query, max_results, SCRAPERAPI_KEY)
         if results:

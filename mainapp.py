@@ -6,7 +6,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from image_recognition import predict_image
 from jumia_scraper import scrape_jumia
 from melcom_scraper import scrape_melcom
+from compughana_scraper import scrape_compughana
 import time
+import re
 
 app = Flask(__name__)
 
@@ -54,11 +56,12 @@ def scrape_all_sources(query):
     """Scrape all sources concurrently using ThreadPoolExecutor with timeout."""
     scrapers = {
         'products': (scrape_jumia, query),
-        'melcom_products': (scrape_melcom, query)
+        'melcom_products': (scrape_melcom, query),
+        'compughana_products': (scrape_compughana, query)
     }
     
     results = {}
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         # Start all scraping tasks
         future_to_source = {
             executor.submit(scrape_with_timeout, func, args): source
@@ -103,19 +106,51 @@ def upload_file():
                 # Start concurrent scraping with timeout
                 scraping_results = scrape_all_sources(label)
                 
-                # Find the cheapest item
-                cheapest_item = find_cheapest_item(
-                    scraping_results.get('products', []),
-                    scraping_results.get('melcom_products', [])
-                )
-                
+                # Helper to parse price strings
+                def parse_price(price_str):
+                    price_num = re.sub(r'[^\d.]', '', str(price_str))
+                    try:
+                        return float(price_num)
+                    except ValueError:
+                        return float('inf')
+
+                # Find the overall cheapest item
+                cheapest_item = None
+                all_products = []
+                if scraping_results.get('products', []):
+                    for p in scraping_results['products']:
+                        p['store'] = 'Jumia'
+                    all_products.extend(scraping_results['products'])
+                if scraping_results.get('melcom_products', []):
+                    for p in scraping_results['melcom_products']:
+                        p['store'] = 'Melcom'
+                    all_products.extend(scraping_results['melcom_products'])
+                if scraping_results.get('compughana_products', []):
+                    for p in scraping_results['compughana_products']:
+                        p['store'] = 'CompuGhana'
+                    all_products.extend(scraping_results['compughana_products'])
+                if all_products:
+                    cheapest_item = min(all_products, key=lambda x: parse_price(x['price']))
+
+                # Find the cheapest product in each store
+                def get_cheapest(products):
+                    return min(products, key=lambda x: parse_price(x['price'])) if products else None
+                cheapest_jumia = get_cheapest(scraping_results.get('products', []))
+                cheapest_melcom = get_cheapest(scraping_results.get('melcom_products', []))
+                cheapest_compughana = get_cheapest(scraping_results.get('compughana_products', []))
+
                 return render_template(
                     'result.html',
-                    filename=filename,
                     label=label,
                     confidence=confidence,
+                    filename=filename,
+                    products=scraping_results.get('products', []),
+                    melcom_products=scraping_results.get('melcom_products', []),
+                    compughana_products=scraping_results.get('compughana_products', []),
                     cheapest_item=cheapest_item,
-                    **scraping_results
+                    cheapest_jumia=cheapest_jumia,
+                    cheapest_melcom=cheapest_melcom,
+                    cheapest_compughana=cheapest_compughana
                 )
             except Exception as e:
                 print(f"Error processing upload: {str(e)}")
@@ -179,33 +214,64 @@ def search_products():
         # Start concurrent scraping with timeout
         scraping_results = scrape_all_sources(query)
         
-        # Find the cheapest item
-        cheapest_item = find_cheapest_item(
-            scraping_results.get('products', []),
-            scraping_results.get('melcom_products', [])
-        )
-        
+        # Helper to parse price strings
+        def parse_price(price_str):
+            price_num = re.sub(r'[^\d.]', '', str(price_str))
+            try:
+                return float(price_num)
+            except ValueError:
+                return float('inf')
+
+        # Find the overall cheapest item
+        cheapest_item = None
+        all_products = []
+        if scraping_results.get('products', []):
+            for p in scraping_results['products']:
+                p['store'] = 'Jumia'
+            all_products.extend(scraping_results['products'])
+        if scraping_results.get('melcom_products', []):
+            for p in scraping_results['melcom_products']:
+                p['store'] = 'Melcom'
+            all_products.extend(scraping_results['melcom_products'])
+        if scraping_results.get('compughana_products', []):
+            for p in scraping_results['compughana_products']:
+                p['store'] = 'CompuGhana'
+            all_products.extend(scraping_results['compughana_products'])
+        if all_products:
+            cheapest_item = min(all_products, key=lambda x: parse_price(x['price']))
+
+        # Find the cheapest product in each store
+        def get_cheapest(products):
+            return min(products, key=lambda x: parse_price(x['price'])) if products else None
+        cheapest_jumia = get_cheapest(scraping_results.get('products', []))
+        cheapest_melcom = get_cheapest(scraping_results.get('melcom_products', []))
+        cheapest_compughana = get_cheapest(scraping_results.get('compughana_products', []))
+
         return render_template(
             'result.html',
             filename=None,  # No image for text search
             label=query,    # Use the search query as the label
             confidence=100, # Full confidence for text search
+            products=scraping_results.get('products', []),
+            melcom_products=scraping_results.get('melcom_products', []),
+            compughana_products=scraping_results.get('compughana_products', []),
             cheapest_item=cheapest_item,
-            **scraping_results
+            cheapest_jumia=cheapest_jumia,
+            cheapest_melcom=cheapest_melcom,
+            cheapest_compughana=cheapest_compughana
         )
     except Exception as e:
         print(f"Error processing search: {str(e)}")
         return render_template('error.html', error="Error processing your search. Please try again.")
 
-def find_cheapest_item(products, melcom_products):
+def find_cheapest_item(products, melcom_products, compughana_products=None):
     """Find the cheapest item across all stores"""
     all_products = []
     
     # Add Jumia products
     for product in products:
         try:
-            # Remove currency symbol and convert to float
-            price_str = product['price'].replace('GH₵', '').replace('GHS', '').strip()
+            price_str = product['price'].replace('GH₵', '').replace('GHS', '').replace('₵', '').replace(',', '').strip()
             price = float(price_str)
             all_products.append({
                 'name': product['name'],
@@ -221,8 +287,7 @@ def find_cheapest_item(products, melcom_products):
     # Add Melcom products
     for product in melcom_products:
         try:
-            # Remove currency symbol and convert to float
-            price_str = product['price'].replace('GH₵', '').replace('GHS', '').strip()
+            price_str = product['price'].replace('GH₵', '').replace('GHS', '').replace('₵', '').replace(',', '').strip()
             price = float(price_str)
             all_products.append({
                 'name': product['name'],
@@ -234,6 +299,23 @@ def find_cheapest_item(products, melcom_products):
             })
         except (ValueError, KeyError):
             continue
+    
+    # Add CompuGhana products
+    if compughana_products:
+        for product in compughana_products:
+            try:
+                price_str = product['price'].replace('GH₵', '').replace('GHS', '').replace('₵', '').replace(',', '').strip()
+                price = float(price_str)
+                all_products.append({
+                    'name': product['name'],
+                    'price': price,
+                    'price_display': product['price'],
+                    'image': product.get('image', ''),
+                    'link': product['link'],
+                    'store': 'CompuGhana'
+                })
+            except (ValueError, KeyError):
+                continue
     
     if not all_products:
         return None
