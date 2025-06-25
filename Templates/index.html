@@ -3,28 +3,31 @@
 {% block content %}
 <section class="hero">
     <h1>Welcome to Pic2Price</h1>
-    <p class="hero-subtitle">Upload a product image or search by text, and we'll find the lowest prices across multiple stores in seconds.</p>
-    <a href="/upload" class="btn btn-primary">Start Comparing Prices</a>
+    <p class="hero-subtitle">Find the best prices instantly! Upload a product image or search by text, and we'll compare prices across multiple stores in seconds.</p>
+    <div class="hero-buttons">
+        <a href="/upload" class="btn btn-primary">Upload Image</a>
+        <a href="/upload" class="btn btn-secondary">Text Search</a>
+    </div>
 </section>
 
 <section class="features">
     <h2>Why Choose Pic2Price?</h2>
     <div class="feature-grid">
         <div class="feature-card">
-            <h3>AI-Powered</h3>
-            <p>Advanced image recognition technology identifies products instantly</p>
+            <h3>AI-Powered Image Search</h3>
+            <p>Simply snap a photo or upload an image, and our AI will identify the product instantly</p>
+        </div>
+        <div class="feature-card">
+            <h3>Text Search Option</h3>
+            <p>Know what you're looking for? Search by product name for quick results</p>
         </div>
         <div class="feature-card">
             <h3>Real-Time Prices</h3>
-            <p>Get up-to-date prices from multiple retailers</p>
+            <p>Get up-to-date prices from multiple retailers across Ghana</p>
         </div>
         <div class="feature-card">
-            <h3>Save Money</h3>
-            <p>Find the best deals and save on your purchases</p>
-        </div>
-        <div class="feature-card">
-            <h3>Easy to Use</h3>
-            <p>Simple upload process - just snap and compare</p>
+            <h3>Best Deal Finder</h3>
+            <p>We automatically highlight the cheapest option to save you time and money</p>
         </div>
     </div>
 </section>
@@ -34,18 +37,46 @@
     <div class="steps">
         <div class="step">
             <div class="step-number">1</div>
-            <h3>Upload Image</h3>
-            <p>Take a photo or upload an image of the product you want to compare</p>
+            <h3>Choose Your Method</h3>
+            <p>Upload an image or enter a product name in the search box</p>
         </div>
         <div class="step">
             <div class="step-number">2</div>
             <h3>AI Analysis</h3>
-            <p>Our AI identifies the product and searches for matches</p>
+            <p>Our AI identifies the product and searches multiple stores simultaneously</p>
         </div>
         <div class="step">
             <div class="step-number">3</div>
             <h3>Get Results</h3>
-            <p>View prices from different stores and find the best deal</p>
+            <p>View prices from different stores with the best deal highlighted</p>
+        </div>
+    </div>
+</section>
+
+<section class="search-methods">
+    <h2>Two Ways to Search</h2>
+    <div class="method-grid">
+        <div class="method-card">
+            <div class="method-icon">📷</div>
+            <h3>Image Search</h3>
+            <p>Perfect when you have a photo of the product. Our AI will recognize it and find the best prices.</p>
+            <ul>
+                <li>Take a photo of any product</li>
+                <li>Upload from your gallery</li>
+                <li>AI identifies the product automatically</li>
+            </ul>
+            <a href="/upload" class="btn">Try Image Search</a>
+        </div>
+        <div class="method-card">
+            <div class="method-icon">🔍</div>
+            <h3>Text Search</h3>
+            <p>Know exactly what you want? Search by product name for instant results.</p>
+            <ul>
+                <li>Type the product name</li>
+                <li>Get instant price comparisons</li>
+                <li>Perfect for specific searches</li>
+            </ul>
+            <a href="/upload" class="btn">Try Text Search</a>
         </div>
     </div>
 </section>
@@ -54,11 +85,11 @@
     <h2>What Our Users Say</h2>
     <div class="testimonial-grid">
         <div class="testimonial-card">
-            <p>"Pic2Price saved me over $50 on my last purchase! The tool is incredibly easy to use."</p>
+            <p>"Pic2Price saved me over $50 on my last purchase! I love that I can search by text when the image doesn't work perfectly."</p>
             <cite>- Sarah M.</cite>
         </div>
         <div class="testimonial-card">
-            <p>"I use Pic2Price before every major purchase. It's become an essential part of my shopping routine."</p>
+            <p>"I use Pic2Price before every major purchase. The text search is so convenient when I know exactly what I want."</p>
             <cite>- John D.</cite>
         </div>
     </div>
@@ -67,6 +98,8 @@
 <section class="cta">
     <h2>Ready to Start Saving?</h2>
     <p>Join thousands of smart shoppers who are already saving money with Pic2Price.</p>
-    <a href="/upload" class="btn btn-primary">Compare Prices Now</a>
+    <div class="cta-buttons">
+        <a href="/upload" class="btn btn-primary">Start Comparing Prices</a>
+    </div>
 </section>
 {% endblock %}

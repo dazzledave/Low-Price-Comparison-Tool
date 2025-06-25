@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 from cache_manager import CacheManager
 import concurrent.futures
 import time
+import os
+import re
 
 def scrape_jumia(query, max_results=5):
     cache = CacheManager()
@@ -13,18 +15,9 @@ def scrape_jumia(query, max_results=5):
         print("Returning cached Jumia results")
         return cached_results
 
-    SCRAPERAPI_KEY = 'afb25771be473a63ced548fe95761266'
+    # Get API key from environment variable or use default
+    SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY', 'c3b3e179e70c0cab29754d52916fe2af')
     
-    # First try direct request
-    try:
-        results = _direct_request(query, max_results)
-        if results:
-            cache.cache_results(query, 'jumia', results)
-            return results
-    except Exception as e:
-        print(f"Direct request failed: {e}")
-
-    # Fall back to ScraperAPI if direct request fails
     try:
         results = _scraper_api_request(query, max_results, SCRAPERAPI_KEY)
         if results:
@@ -32,10 +25,14 @@ def scrape_jumia(query, max_results=5):
             return results
     except Exception as e:
         print(f"ScraperAPI request failed: {e}")
+        # Save error response for debugging
+        if hasattr(e, 'response') and e.response is not None:
+            with open('jumia_error.html', 'w', encoding='utf-8') as f:
+                f.write(e.response.text)
 
     return []
 
-def _direct_request(query, max_results, timeout=10):
+def _scraper_api_request(query, max_results, api_key, timeout=30):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -43,56 +40,141 @@ def _direct_request(query, max_results, timeout=10):
         'Connection': 'keep-alive',
     }
 
-    url = f"https://www.jumia.com.gh/catalog/?q={query.replace(' ', '+')}"
-    
-    response = requests.get(url, headers=headers, timeout=timeout)
-    if response.status_code != 200:
-        raise Exception(f"Direct request failed with status code: {response.status_code}")
-
-    return _parse_results(response.text, max_results)
-
-def _scraper_api_request(query, max_results, api_key, timeout=30):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    }
-
     target_url = f"https://www.jumia.com.gh/catalog/?q={query.replace(' ', '+')}"
-    search_url = f"http://api.scraperapi.com/?api_key={api_key}&url={target_url}"
-
-    response = requests.get(search_url, headers=headers, timeout=timeout)
-    if response.status_code != 200:
-        raise Exception(f"ScraperAPI request failed with status code: {response.status_code}")
-
-    return _parse_results(response.text, max_results)
+    
+    # Add ScraperAPI parameters for better success rate
+    params = {
+        'api_key': api_key,
+        'url': target_url
+    }
+    
+    search_url = 'http://api.scraperapi.com/'
+    
+    try:
+        response = requests.get(search_url, params=params, headers=headers, timeout=timeout)
+        response.raise_for_status()  # Raise exception for bad status codes
+        
+        # Save debug HTML for troubleshooting
+        with open('jumia_debug.html', 'w', encoding='utf-8') as f:
+            f.write(response.text)
+            
+        return _parse_results(response.text, max_results)
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response status code: {e.response.status_code}")
+            print(f"Response headers: {e.response.headers}")
+        raise
 
 def _parse_results(html_content, max_results):
     soup = BeautifulSoup(html_content, 'html.parser')
-    products = soup.select('article.prd')
+    
+    # Try different selectors for product containers - updated for new structure
+    products = soup.select('article.prd') or soup.select('article[class*="prd"]') or soup.select('div.c-prd') or soup.select('div[data-prd]')
+    
+    print(f"Found {len(products)} product containers")
+    
+    if not products:
+        print("No products found with any selector")
+        return []
 
     results = []
-    for product in products[:max_results]:
+    for i, product in enumerate(products[:max_results]):
         try:
-            name_tag = product.select_one('h3.name')
-            price_tag = product.select_one('div.prc')
-            link_tag = product.find('a', href=True)
-            image_tag = product.select_one('img')
-
+            print(f"\nProcessing product {i+1}:")
+            
+            # Updated selectors based on the HTML structure shown in the logs
+            name_tag = (
+                product.select_one('h2.name') or 
+                product.select_one('h2[class*="name"]') or
+                product.select_one('h3.name') or 
+                product.select_one('h3[class*="name"]') or
+                product.select_one('div[class*="name"]') or
+                product.select_one('a[class*="name"]')
+            )
+            
+            price_tag = (
+                product.select_one('p.prc') or
+                product.select_one('p[class*="prc"]') or
+                product.select_one('div.prc') or
+                product.select_one('div[class*="prc"]') or
+                product.select_one('div[class*="price"]')
+            )
+            
+            # Look for product links - find the first <a> with href starting with '/' and not containing '/cart/' or '/customer/'
+            link_tag = None
+            for a in product.find_all('a', href=True):
+                href = a['href']
+                if href.startswith('/') and '/cart/' not in href and '/customer/' not in href and '.html' in href:
+                    link_tag = a
+                    break
+                    
+            print(f"  Name tag found: {name_tag is not None}")
+            print(f"  Price tag found: {price_tag is not None}")
+            print(f"  Link tag found: {link_tag is not None}")
+            
             if not all([name_tag, price_tag, link_tag]):
+                print(f"  Missing required elements for product {i+1}")
                 continue
 
             name = name_tag.get_text(strip=True)
             price = price_tag.get_text(strip=True)
-            link = 'https://www.jumia.com.gh' + link_tag['href'].split('?')[0]
-            image = image_tag['data-src'] if image_tag and image_tag.has_attr('data-src') else ''
+            link = link_tag.get('href')
+            
+            print(f"  Name: {name}")
+            print(f"  Price: {price}")
+            print(f"  Link: {link}")
+            
+            if link and not link.startswith('http'):
+                link = 'https://www.jumia.com.gh' + link
+            link = link.split('?')[0]  # Remove query parameters
+            
+            image_tag = product.select_one('img')
 
+            # Get image URL
+            image = ''
+            if image_tag:
+                image = image_tag.get('data-src') or image_tag.get('src', '')
+                if image and not image.startswith('http'):
+                    image = 'https://www.jumia.com.gh' + image
+
+            # Generate a more reliable link
+            reliable_link = _generate_reliable_link(name, link)
+            
             results.append({
                 'name': name,
                 'price': price,
-                'link': link,
+                'link': reliable_link,
                 'image': image
             })
+            
+            print(f"  Successfully processed product {i+1}")
+            
         except Exception as e:
-            print(f"Error parsing product: {e}")
+            print(f"Error parsing product {i+1}: {e}")
             continue
 
+    print(f"\nTotal products successfully parsed: {len(results)}")
     return results
+
+def _generate_reliable_link(name, original_link):
+    """Generate a more reliable product link"""
+    try:
+        # Clean the product name for URL generation
+        clean_name = re.sub(r'[^\w\s-]', '', name.lower())
+        clean_name = re.sub(r'[-\s]+', '-', clean_name)
+        clean_name = clean_name.strip('-')
+        
+        # If we have a good original link, use it
+        if original_link and 'jumia.com.gh' in original_link:
+            return original_link
+        
+        # Otherwise, create a search link
+        search_query = name.replace(' ', '+')
+        return f"https://www.jumia.com.gh/catalog/?q={search_query}"
+        
+    except Exception as e:
+        print(f"Error generating reliable link: {e}")
+        # Fallback to search page
+        search_query = name.replace(' ', '+')
+        return f"https://www.jumia.com.gh/catalog/?q={search_query}"

@@ -68,13 +68,35 @@
     </div>
 
     <div id="results-section" style="display: none;">
+        {% if cheapest_item %}
+        <div class="best-deal-container">
+            <h2>Best Deal Found!</h2>
+            <div class="best-deal">
+                <div class="best-deal-badge">Best Price</div>
+                {% if cheapest_item.image %}
+                    <img src="{{ cheapest_item.image }}" alt="{{ cheapest_item.name }}">
+                {% endif %}
+                <div class="best-deal-details">
+                    <h3>{{ cheapest_item.name }}</h3>
+                    <p class="price">GH₵ {{ cheapest_item.price_display }}</p>
+                    <p class="store">Available at {{ cheapest_item.store }}</p>
+                    <a href="{{ cheapest_item.link }}" target="_blank" class="btn btn-primary">View Deal</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="link-notice">
+            <p><strong>Note:</strong> Product links may redirect to search pages or require login. This is normal for e-commerce sites.</p>
+        </div>
+
         <!-- Jumia Products -->
         <div id="jumia-container" class="store-container">
             <h2>Matching Products on Jumia</h2>
             <div class="product-list">
             {% if products %}
                 {% for product in products %}
-                <div class="product-item">
+                <div class="product-item {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Jumia' %}cheapest-item{% endif %}">
                     {% if product.image %}
                         <img src="{{ product.image }}" alt="{{ product.name }}">
                     {% endif %}
@@ -95,7 +117,7 @@
             <div class="product-list">
             {% if melcom_products %}
                 {% for product in melcom_products %}
-                <div class="product-item">
+                <div class="product-item {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Melcom' %}cheapest-item{% endif %}">
                     {% if product.image %}
                         <img src="{{ product.image }}" alt="{{ product.name }}">
                     {% endif %}

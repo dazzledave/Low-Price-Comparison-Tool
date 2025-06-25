@@ -40,12 +40,12 @@ def allowed_file(filename):
     """Check if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def scrape_with_timeout(scraper_func, query, max_results=5):
-    """Run a scraper with timeout"""
+def scrape_with_timeout(scraper_func, args, timeout=SCRAPING_TIMEOUT):
+    """Execute a scraping function with a timeout."""
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(scraper_func, query, max_results)
-            return future.result(timeout=SCRAPING_TIMEOUT)
+        if isinstance(args, str):
+            return scraper_func(args)
+        return scraper_func(*args)
     except (TimeoutError, Exception) as e:
         print(f"Error in {scraper_func.__name__}: {str(e)}")
         return []
@@ -53,16 +53,16 @@ def scrape_with_timeout(scraper_func, query, max_results=5):
 def scrape_all_sources(query):
     """Scrape all sources concurrently using ThreadPoolExecutor with timeout."""
     scrapers = {
-        'products': (scrape_jumia, []),
-        'melcom_products': (scrape_melcom, [])
+        'products': (scrape_jumia, query),
+        'melcom_products': (scrape_melcom, query)
     }
     
     results = {}
     with ThreadPoolExecutor(max_workers=2) as executor:
         # Start all scraping tasks
         future_to_source = {
-            executor.submit(scrape_with_timeout, func, query): source
-            for source, (func, _) in scrapers.items()
+            executor.submit(scrape_with_timeout, func, args): source
+            for source, (func, args) in scrapers.items()
         }
         
         # Process results as they complete
@@ -103,11 +103,18 @@ def upload_file():
                 # Start concurrent scraping with timeout
                 scraping_results = scrape_all_sources(label)
                 
+                # Find the cheapest item
+                cheapest_item = find_cheapest_item(
+                    scraping_results.get('products', []),
+                    scraping_results.get('melcom_products', [])
+                )
+                
                 return render_template(
                     'result.html',
                     filename=filename,
                     label=label,
                     confidence=confidence,
+                    cheapest_item=cheapest_item,
                     **scraping_results
                 )
             except Exception as e:
@@ -172,16 +179,68 @@ def search_products():
         # Start concurrent scraping with timeout
         scraping_results = scrape_all_sources(query)
         
+        # Find the cheapest item
+        cheapest_item = find_cheapest_item(
+            scraping_results.get('products', []),
+            scraping_results.get('melcom_products', [])
+        )
+        
         return render_template(
             'result.html',
             filename=None,  # No image for text search
             label=query,    # Use the search query as the label
             confidence=100, # Full confidence for text search
+            cheapest_item=cheapest_item,
             **scraping_results
         )
     except Exception as e:
         print(f"Error processing search: {str(e)}")
         return render_template('error.html', error="Error processing your search. Please try again.")
+
+def find_cheapest_item(products, melcom_products):
+    """Find the cheapest item across all stores"""
+    all_products = []
+    
+    # Add Jumia products
+    for product in products:
+        try:
+            # Remove currency symbol and convert to float
+            price_str = product['price'].replace('GH₵', '').replace('GHS', '').strip()
+            price = float(price_str)
+            all_products.append({
+                'name': product['name'],
+                'price': price,
+                'price_display': product['price'],
+                'image': product.get('image', ''),
+                'link': product['link'],
+                'store': 'Jumia'
+            })
+        except (ValueError, KeyError):
+            continue
+    
+    # Add Melcom products
+    for product in melcom_products:
+        try:
+            # Remove currency symbol and convert to float
+            price_str = product['price'].replace('GH₵', '').replace('GHS', '').strip()
+            price = float(price_str)
+            all_products.append({
+                'name': product['name'],
+                'price': price,
+                'price_display': product['price'],
+                'image': product.get('image', ''),
+                'link': product['link'],
+                'store': 'Melcom'
+            })
+        except (ValueError, KeyError):
+            continue
+    
+    if not all_products:
+        return None
+    
+    # Find the cheapest item
+    cheapest_item = min(all_products, key=lambda x: x['price'])
+    return cheapest_item
 
 if __name__ == '__main__':
     app.run(debug=True)

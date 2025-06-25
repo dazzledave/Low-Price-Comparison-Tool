@@ -5,6 +5,9 @@ import urllib.parse
 from cache_manager import CacheManager
 import concurrent.futures
 import time
+import re
+
+SCRAPERAPI_KEY = 'c3b3e179e70c0cab29754d52916fe2af'
 
 def scrape_melcom(query, max_results=5):
     cache = CacheManager()
@@ -15,23 +18,25 @@ def scrape_melcom(query, max_results=5):
         print("Returning cached Melcom results")
         return cached_results
 
-    # Try mobile API with timeout
-    try:
-        results = _mobile_api_request(query, max_results)
-        if results:
-            cache.cache_results(query, 'melcom', results)
-            return results
-    except Exception as e:
-        print(f"Mobile API request failed: {e}")
-
-    # Fall back to ScraperAPI
+    # Try ScraperAPI first (like Jumia does) to get HTML and extract real links
     try:
         results = _scraper_api_request(query, max_results)
         if results:
+            print(f"ScraperAPI returned {len(results)} results")
             cache.cache_results(query, 'melcom', results)
             return results
     except Exception as e:
         print(f"ScraperAPI request failed: {e}")
+
+    # Fall back to mobile API if HTML parsing fails
+    try:
+        results = _mobile_api_request(query, max_results)
+        if results:
+            print(f"Mobile API returned {len(results)} results")
+            cache.cache_results(query, 'melcom', results)
+            return results
+    except Exception as e:
+        print(f"Mobile API request failed: {e}")
 
     return []
 
@@ -45,7 +50,10 @@ def _mobile_api_request(query, max_results, timeout=15):
         'Store': 'default'
     }
 
+    print(f"Making API request to: {api_url}")
     response = requests.get(api_url, headers=headers, timeout=timeout)
+    print(f"API response status: {response.status_code}")
+    
     if response.status_code != 200:
         raise Exception(f"Mobile API request failed with status code: {response.status_code}")
 
@@ -59,6 +67,9 @@ def _mobile_api_request(query, max_results, timeout=15):
             name = item.get('name', '')
             price = str(item.get('price', '0.00'))
             sku = item.get('sku', '')
+            product_id = item.get('id', '')
+            
+            print(f"Processing product: {name} (ID: {product_id}, SKU: {sku})")
             
             # Get the first image if available
             image = ''
@@ -67,11 +78,25 @@ def _mobile_api_request(query, max_results, timeout=15):
                 if image and not image.startswith('http'):
                     image = f"https://melcom.com/media/catalog/product{image}"
             
-            # Construct the product URL
-            url_key = item.get('url_key', '') or sku
-            link = f"https://melcom.com/catalog/product/view/id/{item.get('id', '')}"
-            if url_key:
-                link = f"https://melcom.com/{url_key}.html"
+            # Try to get the actual product URL from the API response
+            # Some APIs include the product URL in the response
+            product_url = None
+            if 'custom_attributes' in item:
+                for attr in item['custom_attributes']:
+                    if attr.get('attribute_code') == 'url_key':
+                        url_key = attr.get('value')
+                        if url_key:
+                            product_url = f"https://melcom.com/{url_key}.html"
+                            break
+            
+            # If we have a product URL from the API, use it
+            if product_url:
+                link = product_url
+                print(f"Using API product URL: {link}")
+            else:
+                # Generate a simple, reliable link
+                link = _generate_simple_link(name, product_id, sku)
+                print(f"Generated link: {link}")
             
             results.append({
                 'name': name,
@@ -85,8 +110,50 @@ def _mobile_api_request(query, max_results, timeout=15):
 
     return results
 
+def _generate_simple_link(name, product_id, sku, url_key=None):
+    """Generate a simple, reliable link for Melcom"""
+    try:
+        # If we have a product ID, use it for direct product view
+        if product_id:
+            return f"https://melcom.com/catalog/product/view/id/{product_id}"
+        
+        # If we have an SKU, try to construct a product URL
+        if sku:
+            # Clean the product name for URL generation
+            clean_name = _clean_product_name(name)
+            return f"https://melcom.com/{clean_name}-{sku}.html"
+        
+        # Otherwise, use the product name for search
+        search_query = urllib.parse.quote(name)
+        return f"https://melcom.com/catalogsearch/result/?q={search_query}"
+        
+    except Exception as e:
+        print(f"Error generating simple link: {e}")
+        # Fallback to search page with product name
+        search_query = urllib.parse.quote(name)
+        return f"https://melcom.com/catalogsearch/result/?q={search_query}"
+
+def _clean_product_name(name):
+    """Clean product name for URL generation"""
+    try:
+        # Remove special characters and replace spaces with hyphens
+        import re
+        # Remove special characters except letters, numbers, and spaces
+        clean_name = re.sub(r'[^\w\s-]', '', name)
+        # Replace multiple spaces with single hyphen
+        clean_name = re.sub(r'\s+', '-', clean_name)
+        # Replace multiple hyphens with single hyphen
+        clean_name = re.sub(r'-+', '-', clean_name)
+        # Convert to lowercase
+        clean_name = clean_name.lower()
+        # Remove leading/trailing hyphens
+        clean_name = clean_name.strip('-')
+        return clean_name
+    except Exception as e:
+        print(f"Error cleaning product name: {e}")
+        return name.lower().replace(' ', '-')
+
 def _scraper_api_request(query, max_results, timeout=30):
-    SCRAPERAPI_KEY = 'afb25771be473a63ced548fe95761266'
     target_url = f"https://melcom.com/catalogsearch/result/?q={urllib.parse.quote(query)}"
     search_url = f"http://api.scraperapi.com/?api_key={SCRAPERAPI_KEY}&render=true&premium=true&country_code=gh&url={target_url}"
     
@@ -114,6 +181,8 @@ def _parse_html_results(html_content, max_results):
         soup.select("[data-container='product-grid'] .product-item")
     )
     
+    print(f"Found {len(product_cards)} product cards in HTML")
+    
     results = []
     for card in product_cards[:max_results]:
         try:
@@ -131,8 +200,14 @@ def _parse_html_results(html_content, max_results):
                 card.select_one(".price-box .price")
             )
             
-            # Link
-            link_elem = name_elem if name_elem else card.select_one("a[href*='/catalog/']")
+            # Look for product links - find the first <a> with href containing product info
+            link_tag = None
+            for a in card.find_all('a', href=True):
+                href = a['href']
+                # Look for product links that contain catalog/product or .html
+                if ('/catalog/product/' in href or '.html' in href) and '/cart/' not in href and '/customer/' not in href:
+                    link_tag = a
+                    break
             
             # Image
             image_elem = (
@@ -140,13 +215,31 @@ def _parse_html_results(html_content, max_results):
                 card.select_one("img.photo.image")
             )
             
-            if not all([name_elem, price_elem, link_elem]):
+            if not all([name_elem, price_elem, link_tag]):
                 continue
                 
             name = name_elem.text.strip()
             price = price_elem.text.strip()
-            link = link_elem['href']
+            original_link = link_tag['href']
             image = image_elem['src'] if image_elem and image_elem.has_attr('src') else ""
+
+            print(f"Processing HTML product: {name}")
+            print(f"Original link: {original_link}")
+
+            # Use the original link if it's valid (like Jumia does)
+            if original_link and 'melcom.com' in original_link:
+                # Make sure it's a full URL
+                if original_link.startswith('/'):
+                    link = f"https://melcom.com{original_link}"
+                elif original_link.startswith('http'):
+                    link = original_link
+                else:
+                    link = f"https://melcom.com/{original_link}"
+            else:
+                # Fallback to generated link
+                link = _generate_simple_link(name, None, None, None)
+
+            print(f"Final link: {link}")
 
             results.append({
                 "name": name,
