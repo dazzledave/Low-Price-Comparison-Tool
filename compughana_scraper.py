@@ -111,9 +111,6 @@ def _scraper_api_request_with_config(config, max_results, timeout=60):
     print(f"  Response Size: {len(response.text)} characters")
     if response.status_code == 200:
         print(f"  ✅ Response received successfully")
-        debug_filename = f"compughana_debug_{config['name'].replace(' ', '_').lower()}.html"
-        with open(debug_filename, 'w', encoding='utf-8') as f:
-            f.write(response.text)
         return _parse_results(response.text, max_results)
     else:
         print(f"  ❌ HTTP {response.status_code}: {response.text[:200]}...")

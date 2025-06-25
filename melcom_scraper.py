@@ -1,20 +1,27 @@
+# -*- coding: utf-8 -*-
 from dotenv import load_dotenv
 import os
-load_dotenv()
+import urllib.parse
+from cache_manager import CacheManager
+import traceback
 
 import requests
 from bs4 import BeautifulSoup
 import json
-import urllib.parse
-from cache_manager import CacheManager
 import concurrent.futures
 import time
 import re
+
+load_dotenv()
 
 # Use the key from the .env file
 SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY')
 
 def scrape_melcom(query, max_results=5):
+    """
+    Scrape Melcom search results using Playwright.
+    Returns a list of dictionaries with keys: name, price, link, image
+    """
     cache = CacheManager()
     
     # Try to get cached results first
@@ -236,24 +243,18 @@ def _parse_html_results(html_content, max_results):
                 # Make sure it's a full URL
                 if original_link.startswith('/'):
                     link = f"https://melcom.com{original_link}"
-                elif original_link.startswith('http'):
-                    link = original_link
                 else:
-                    link = f"https://melcom.com/{original_link}"
+                    link = original_link
             else:
-                # Fallback to generated link
-                link = _generate_simple_link(name, None, None, None)
-
-            print(f"Final link: {link}")
+                link = original_link
 
             results.append({
-                "name": name,
-                "price": price,
-                "link": link,
-                "image": image
+                'name': name,
+                'price': price,
+                'link': link,
+                'image': image
             })
         except Exception as e:
-            print(f"Error parsing product from HTML: {e}")
+            print(f"Error processing product from HTML: {e}")
             continue
-
     return results

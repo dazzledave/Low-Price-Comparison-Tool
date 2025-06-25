@@ -30,10 +30,6 @@ def scrape_jumia(query, max_results=5):
             return results
     except Exception as e:
         print(f"ScraperAPI request failed: {e}")
-        # Save error response for debugging
-        if hasattr(e, 'response') and e.response is not None:
-            with open('jumia_error.html', 'w', encoding='utf-8') as f:
-                f.write(e.response.text)
 
     return []
 
@@ -59,10 +55,6 @@ def _scraper_api_request(query, max_results, api_key, timeout=30):
         response = requests.get(search_url, params=params, headers=headers, timeout=timeout)
         response.raise_for_status()  # Raise exception for bad status codes
         
-        # Save debug HTML for troubleshooting
-        with open('jumia_debug.html', 'w', encoding='utf-8') as f:
-            f.write(response.text)
-            
         return _parse_results(response.text, max_results)
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
