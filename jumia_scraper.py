@@ -10,7 +10,7 @@ import time
 import re
 
 # Use the key from the .env file
-SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY')
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
 
 def scrape_jumia(query, max_results=5):
     cache = CacheManager()

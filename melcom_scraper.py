@@ -15,7 +15,7 @@ import re
 load_dotenv()
 
 # Use the key from the .env file
-SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY')
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
 
 def scrape_melcom(query, max_results=5):
     """

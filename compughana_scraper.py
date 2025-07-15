@@ -4,9 +4,12 @@ import os
 import re
 import time
 from cache_manager import CacheManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def scrape_compughana(query, max_results=5):
-    SCRAPERAPI_KEY = os.getenv('SCRAPERAPI_KEY', '38bde1db8b81b05543c7c870d085a6f7')
+    SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
     cache = CacheManager()
     cached_results = cache.get_cached_results(query, 'compughana')
     if cached_results:

@@ -78,7 +78,18 @@
                 {% endif %}
                 <div class="best-deal-details">
                     <h3>{{ cheapest_item.name }}</h3>
-                    <p class="price">{{ cheapest_item.price }}</p>
+                    <p class="price">
+                        {% if cheapest_item.converted_price is not none and cheapest_item.converted_currency %}
+                            {% if (cheapest_item.store == 'Amazon' and cheapest_item.converted_currency == 'USD') or (cheapest_item.store != 'Amazon' and cheapest_item.converted_currency == 'GHS') %}
+                                {{ cheapest_item.converted_currency }} {{ cheapest_item.converted_price }}
+                            {% else %}
+                                {{ cheapest_item.converted_currency }} {{ cheapest_item.converted_price }}
+                                <span class="original-price">({{ cheapest_item.original_price_with_symbol }})</span>
+                            {% endif %}
+                        {% else %}
+                            {{ cheapest_item.price }}
+                        {% endif %}
+                    </p>
                     <p class="store">Available at {{ cheapest_item.store }}</p>
                     <a href="{{ cheapest_item.link }}" target="_blank" class="btn btn-primary">View Deal</a>
                 </div>
@@ -109,7 +120,18 @@
                     </div>
                     <div class="product-info">
                         <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
-                        <div class="product-price-badge">GH₵ {{ product.price }}</div>
+                        <div class="product-price-badge">
+                            {% if product.converted_price is not none and product.converted_currency %}
+                                {% if (product.store == 'Amazon' and product.converted_currency == 'USD') or (product.store != 'Amazon' and product.converted_currency == 'GHS') %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                {% else %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                    <span class="original-price">({{ product.original_price_with_symbol }})</span>
+                                {% endif %}
+                            {% else %}
+                                {{ product.price }}
+                            {% endif %}
+                        </div>
                         <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
                     </div>
                 </div>
@@ -139,7 +161,18 @@
                     </div>
                     <div class="product-info">
                         <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
-                        <div class="product-price-badge">GH₵ {{ product.price }}</div>
+                        <div class="product-price-badge">
+                            {% if product.converted_price is not none and product.converted_currency %}
+                                {% if (product.store == 'Amazon' and product.converted_currency == 'USD') or (product.store != 'Amazon' and product.converted_currency == 'GHS') %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                {% else %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                    <span class="original-price">({{ product.original_price_with_symbol }})</span>
+                                {% endif %}
+                            {% else %}
+                                {{ product.price }}
+                            {% endif %}
+                        </div>
                         <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
                     </div>
                 </div>
@@ -169,13 +202,65 @@
                     </div>
                     <div class="product-info">
                         <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
-                        <div class="product-price-badge">{{ product.price }}</div>
+                        <div class="product-price-badge">
+                            {% if product.converted_price is not none and product.converted_currency %}
+                                {% if (product.store == 'Amazon' and product.converted_currency == 'USD') or (product.store != 'Amazon' and product.converted_currency == 'GHS') %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                {% else %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                    <span class="original-price">({{ product.original_price_with_symbol }})</span>
+                                {% endif %}
+                            {% else %}
+                                {{ product.price }}
+                            {% endif %}
+                        </div>
                         <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
                     </div>
                 </div>
                 {% endfor %}
             {% else %}
                 <p>No matching CompuGhana products found.</p>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- Amazon Products -->
+        <div id="amazon-container" class="store-container">
+            <div class="store-header">
+                <span class="store-icon"><i class="fa-brands fa-amazon"></i></span>
+                <span class="store-title">Amazon ({{ amazon_products|length }} products)</span>
+            </div>
+            <div class="product-card-grid">
+            {% if amazon_products %}
+                {% for product in amazon_products %}
+                <div class="product-card {% if cheapest_item and product.name == cheapest_item.name and product.price == cheapest_item.price_display and cheapest_item.store == 'Amazon' %}cheapest-item{% elif cheapest_amazon and product.name == cheapest_amazon.name and product.price == cheapest_amazon.price %}store-cheapest{% endif %}">
+                    <div class="product-image-wrap">
+                        {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="no-image">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name" title="{{ product.name }}">{{ product.name }}</div>
+                        <div class="product-price-badge">
+                            {% if product.converted_price is not none and product.converted_currency %}
+                                {% if (product.store == 'Amazon' and product.converted_currency == 'USD') or (product.store != 'Amazon' and product.converted_currency == 'GHS') %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                {% else %}
+                                    {{ product.converted_currency }} {{ product.converted_price }}
+                                    <span class="original-price">({{ product.original_price_with_symbol }})</span>
+                                {% endif %}
+                            {% else %}
+                                {{ product.price }}
+                            {% endif %}
+                        </div>
+                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No matching Amazon products found.</p>
             {% endif %}
             </div>
         </div>

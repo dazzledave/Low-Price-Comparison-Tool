@@ -79,3 +79,35 @@ class CacheManager:
                 os.remove(os.path.join(self.cache_dir, filename))
             except OSError:
                 pass 
+
+    def _get_currency_cache_file(self):
+        return os.path.join(self.cache_dir, "currency_rates.json")
+
+    def get_cached_currency_rates(self):
+        """Get cached currency rates if they exist and are not expired (1 hour)"""
+        cache_file = self._get_currency_cache_file()
+        if not os.path.exists(cache_file):
+            return None
+        file_time = datetime.fromtimestamp(os.path.getmtime(cache_file))
+        if datetime.now() - file_time > timedelta(hours=1):
+            try:
+                os.remove(cache_file)
+            except OSError:
+                pass
+            return None
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return None
+
+    def cache_currency_rates(self, rates):
+        """Cache the currency rates"""
+        if not rates:
+            return
+        cache_file = self._get_currency_cache_file()
+        try:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(rates, f, ensure_ascii=False, indent=2)
+        except OSError:
+            pass 
