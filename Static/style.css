@@ -234,6 +234,42 @@ body {
     margin: 15px 0;
 }
 
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 1em;
+}
+
+.model-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--shadow-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1em;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.model-select:focus {
+    outline: none;
+    border-color: var(--btn-bg);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.model-select:hover {
+    border-color: var(--btn-bg);
+}
+
+.model-select option {
+    background: var(--bg-color);
+    color: var(--text-color);
+    padding: 8px;
+}
+
 #file-input {
     display: block;
     margin: 10px auto;

@@ -7,8 +7,10 @@ from image_recognition import predict_image
 from jumia_scraper import scrape_jumia
 from melcom_scraper import scrape_melcom
 from compughana_scraper import scrape_compughana
+from amazon_scraper import scrape_amazon
 import time
 import re
+from currency_utils import convert_price
 
 app = Flask(__name__)
 
@@ -57,11 +59,12 @@ def scrape_all_sources(query):
     scrapers = {
         'products': (scrape_jumia, query),
         'melcom_products': (scrape_melcom, query),
-        'compughana_products': (scrape_compughana, query)
+        'compughana_products': (scrape_compughana, query),
+        'amazon_products': (scrape_amazon, query)
     }
     
     results = {}
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         # Start all scraping tasks
         future_to_source = {
             executor.submit(scrape_with_timeout, func, args): source
@@ -100,21 +103,50 @@ def upload_file():
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(file_path)
 
+                # Get selected model from form
+                model_name = request.form.get('model', 'inceptionv3')
+                currency = request.form.get('currency', 'GHS')
+
                 # Get image recognition results
-                label, confidence = predict_image(file_path)
+                label, confidence = predict_image(file_path, model_name)
                 
                 # Start concurrent scraping with timeout
                 scraping_results = scrape_all_sources(label)
                 
                 # Helper to parse price strings
                 def parse_price(price_str):
-                    price_num = re.sub(r'[^\d.]', '', str(price_str))
+                    if not price_str or price_str == 'Price not available':
+                        return None
+                    # Remove currency symbols and common text
+                    price_clean = re.sub(r'[^\d.,]', '', str(price_str))
+                    if not price_clean:
+                        return None
                     try:
-                        return float(price_num)
+                        # Handle comma-separated thousands
+                        price_clean = price_clean.replace(',', '')
+                        return float(price_clean)
                     except ValueError:
-                        return float('inf')
+                        return None
 
-                # Find the overall cheapest item
+                # Convert prices for all products with correct source currency
+                store_currency = {
+                    'products': 'GHS',
+                    'melcom_products': 'GHS',
+                    'compughana_products': 'GHS',
+                    'amazon_products': 'USD',
+                }
+                for key in ['products', 'melcom_products', 'compughana_products', 'amazon_products']:
+                    for p in scraping_results.get(key, []):
+                        orig_price = parse_price(p['price'])
+                        if orig_price is not None:
+                            converted = convert_price(orig_price, currency, store_currency[key])
+                            p['converted_price'] = converted
+                            p['converted_currency'] = currency
+                        else:
+                            p['converted_price'] = None
+                            p['converted_currency'] = currency
+
+                # Find the overall cheapest item (use converted_price)
                 cheapest_item = None
                 all_products = []
                 if scraping_results.get('products', []):
@@ -129,15 +161,31 @@ def upload_file():
                     for p in scraping_results['compughana_products']:
                         p['store'] = 'CompuGhana'
                     all_products.extend(scraping_results['compughana_products'])
+                if scraping_results.get('amazon_products', []):
+                    for p in scraping_results['amazon_products']:
+                        p['store'] = 'Amazon'
+                    all_products.extend(scraping_results['amazon_products'])
+                def get_converted_price(x):
+                    return x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf')
                 if all_products:
-                    cheapest_item = min(all_products, key=lambda x: parse_price(x['price']))
-
-                # Find the cheapest product in each store
+                    cheapest_item = min(all_products, key=get_converted_price)
+                # Find the cheapest product in each store (use converted_price)
                 def get_cheapest(products):
-                    return min(products, key=lambda x: parse_price(x['price'])) if products else None
+                    return min(products, key=get_converted_price) if products else None
                 cheapest_jumia = get_cheapest(scraping_results.get('products', []))
                 cheapest_melcom = get_cheapest(scraping_results.get('melcom_products', []))
                 cheapest_compughana = get_cheapest(scraping_results.get('compughana_products', []))
+                cheapest_amazon = get_cheapest(scraping_results.get('amazon_products', []))
+                # Strip currency symbols from original price for local stores
+                def strip_ghs(price):
+                    return re.sub(r'^(GHS|GH₵|₵|GHC|Ghc|ghc|gh₵|Ghs|Ghs|GHS|GHS)\s*', '', str(price)).strip()
+                for key in ['products', 'melcom_products', 'compughana_products']:
+                    for p in scraping_results.get(key, []):
+                        p['original_price_clean'] = strip_ghs(p['price'])
+                        p['original_price_with_symbol'] = p['price']  # Keep original with symbol
+                for p in scraping_results.get('amazon_products', []):
+                    p['original_price_clean'] = p['price']
+                    p['original_price_with_symbol'] = p['price']  # Keep original with symbol
 
                 return render_template(
                     'result.html',
@@ -147,10 +195,13 @@ def upload_file():
                     products=scraping_results.get('products', []),
                     melcom_products=scraping_results.get('melcom_products', []),
                     compughana_products=scraping_results.get('compughana_products', []),
+                    amazon_products=scraping_results.get('amazon_products', []),
                     cheapest_item=cheapest_item,
                     cheapest_jumia=cheapest_jumia,
                     cheapest_melcom=cheapest_melcom,
-                    cheapest_compughana=cheapest_compughana
+                    cheapest_compughana=cheapest_compughana,
+                    cheapest_amazon=cheapest_amazon,
+                    selected_currency=currency
                 )
             except Exception as e:
                 print(f"Error processing upload: {str(e)}")
@@ -206,6 +257,7 @@ def admin():
 def search_products():
     """Handle text-based product search."""
     query = request.form.get('query', '').strip()
+    currency = request.form.get('currency', 'GHS')
     
     if not query:
         return redirect(url_for('upload_file'))
@@ -216,13 +268,38 @@ def search_products():
         
         # Helper to parse price strings
         def parse_price(price_str):
-            price_num = re.sub(r'[^\d.]', '', str(price_str))
+            if not price_str or price_str == 'Price not available':
+                return None
+            # Remove currency symbols and common text
+            price_clean = re.sub(r'[^\d.,]', '', str(price_str))
+            if not price_clean:
+                return None
             try:
-                return float(price_num)
+                # Handle comma-separated thousands
+                price_clean = price_clean.replace(',', '')
+                return float(price_clean)
             except ValueError:
-                return float('inf')
+                return None
 
-        # Find the overall cheapest item
+        # Convert prices for all products with correct source currency
+        store_currency = {
+            'products': 'GHS',
+            'melcom_products': 'GHS',
+            'compughana_products': 'GHS',
+            'amazon_products': 'USD',
+        }
+        for key in ['products', 'melcom_products', 'compughana_products', 'amazon_products']:
+            for p in scraping_results.get(key, []):
+                orig_price = parse_price(p['price'])
+                if orig_price is not None:
+                    converted = convert_price(orig_price, currency, store_currency[key])
+                    p['converted_price'] = converted
+                    p['converted_currency'] = currency
+                else:
+                    p['converted_price'] = None
+                    p['converted_currency'] = currency
+
+        # Find the overall cheapest item (use converted_price)
         cheapest_item = None
         all_products = []
         if scraping_results.get('products', []):
@@ -237,15 +314,31 @@ def search_products():
             for p in scraping_results['compughana_products']:
                 p['store'] = 'CompuGhana'
             all_products.extend(scraping_results['compughana_products'])
+        if scraping_results.get('amazon_products', []):
+            for p in scraping_results['amazon_products']:
+                p['store'] = 'Amazon'
+            all_products.extend(scraping_results['amazon_products'])
+        def get_converted_price(x):
+            return x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf')
         if all_products:
-            cheapest_item = min(all_products, key=lambda x: parse_price(x['price']))
-
-        # Find the cheapest product in each store
+            cheapest_item = min(all_products, key=get_converted_price)
+        # Find the cheapest product in each store (use converted_price)
         def get_cheapest(products):
-            return min(products, key=lambda x: parse_price(x['price'])) if products else None
+            return min(products, key=get_converted_price) if products else None
         cheapest_jumia = get_cheapest(scraping_results.get('products', []))
         cheapest_melcom = get_cheapest(scraping_results.get('melcom_products', []))
         cheapest_compughana = get_cheapest(scraping_results.get('compughana_products', []))
+        cheapest_amazon = get_cheapest(scraping_results.get('amazon_products', []))
+        # Strip currency symbols from original price for local stores
+        def strip_ghs(price):
+            return re.sub(r'^(GHS|GH₵|₵|GHC|Ghc|ghc|gh₵|Ghs|Ghs|GHS|GHS)\s*', '', str(price)).strip()
+        for key in ['products', 'melcom_products', 'compughana_products']:
+            for p in scraping_results.get(key, []):
+                p['original_price_clean'] = strip_ghs(p['price'])
+                p['original_price_with_symbol'] = p['price']  # Keep original with symbol
+        for p in scraping_results.get('amazon_products', []):
+            p['original_price_clean'] = p['price']
+            p['original_price_with_symbol'] = p['price']  # Keep original with symbol
 
         return render_template(
             'result.html',
@@ -255,10 +348,13 @@ def search_products():
             products=scraping_results.get('products', []),
             melcom_products=scraping_results.get('melcom_products', []),
             compughana_products=scraping_results.get('compughana_products', []),
+            amazon_products=scraping_results.get('amazon_products', []),
             cheapest_item=cheapest_item,
             cheapest_jumia=cheapest_jumia,
             cheapest_melcom=cheapest_melcom,
-            cheapest_compughana=cheapest_compughana
+            cheapest_compughana=cheapest_compughana,
+            cheapest_amazon=cheapest_amazon,
+            selected_currency=currency
         )
     except Exception as e:
         print(f"Error processing search: {str(e)}")

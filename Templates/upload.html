@@ -15,8 +15,25 @@
     <div id="image-upload" class="search-tab active">
         <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
             <div class="form-group">
+                <label for="model-select">Image Recognition Model:</label>
+                <select name="model" id="model-select" class="model-select">
+                    <option value="inceptionv3">InceptionV3</option>
+                    <option value="clip" selected>CLIP</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <input type="file" name="file" id="file-input" accept="image/*" required>
                 <button type="submit" class="btn" id="upload-btn">Upload</button>
+            </div>
+            <div class="form-group">
+                <label for="currency-select">Currency:</label>
+                <select name="currency" id="currency-select" class="currency-select">
+                    <option value="GHS">GHS (Ghana Cedi)</option>
+                    <option value="USD">USD (US Dollar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                    <option value="GBP">GBP (British Pound)</option>
+                    <option value="NGN">NGN (Nigerian Naira)</option>
+                </select>
             </div>
         </form>
     </div>
@@ -26,6 +43,16 @@
             <div class="form-group">
                 <input type="text" name="query" id="search-input" placeholder="Enter product name..." required>
                 <button type="submit" class="btn" id="search-btn">Search</button>
+            </div>
+            <div class="form-group">
+                <label for="currency-select-2">Currency:</label>
+                <select name="currency" id="currency-select-2" class="currency-select">
+                    <option value="GHS">GHS (Ghana Cedi)</option>
+                    <option value="USD">USD (US Dollar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                    <option value="GBP">GBP (British Pound)</option>
+                    <option value="NGN">NGN (Nigerian Naira)</option>
+                </select>
             </div>
         </form>
     </div>
