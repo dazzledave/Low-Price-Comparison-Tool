@@ -4,8 +4,8 @@
 # Gmail Settings (recommended)
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USER = 'amdgomado@gmail.com'  # Replace with your Gmail
-EMAIL_PASSWORD = 'aencdyuxkhhbafxp'  # Replace with your Gmail app password
+EMAIL_USER = 'your-email@gmail.com'  # Replace with your Gmail
+EMAIL_PASSWORD = 'your-app-password'  # Replace with your Gmail app password
 
 # Alternative: Outlook/Hotmail
 # EMAIL_HOST = 'smtp-mail.outlook.com'

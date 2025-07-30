@@ -1,0 +1,28 @@
+# Minimal requirements for deployment
+# Core web framework
+Flask>=2.0.0
+Werkzeug>=2.0.0
+
+# Web scraping
+requests>=2.25.0
+beautifulsoup4>=4.9.0
+lxml>=4.6.0
+
+# Basic image processing (lighter than TensorFlow)
+Pillow>=8.0.0
+
+# Data processing
+numpy>=1.19.0
+
+# Background tasks
+schedule>=1.1.0
+
+# Environment variables
+python-dotenv>=0.19.0
+
+# Additional utilities
+urllib3>=1.26.0
+
+# Note: AI packages (tensorflow, torch, transformers) are excluded
+# for deployment to reduce build time and memory usage
+# If you need AI features, use the full requirements.txt 
