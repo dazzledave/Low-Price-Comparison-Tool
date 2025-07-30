@@ -18,7 +18,7 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-store"></i>
-                <span class="stat-number">{{ wishlist_items|map(attribute='store')|unique|list|length }}</span>
+                <span class="stat-number">{{ unique_stores_count }}</span>
                 <span class="stat-label">Stores</span>
             </div>
         </div>

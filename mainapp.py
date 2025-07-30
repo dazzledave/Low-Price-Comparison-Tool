@@ -120,14 +120,14 @@ def init_db():
 
 init_db()  # Initialize DB on app start
 
-def send_price_alert_email(alert_data, current_price):
+def send_price_alert_email(alert_data, current_price, store_currency):
     """Send email notification when target price is reached."""
     try:
         # Create message
         msg = MIMEMultipart()
         msg['From'] = EMAIL_USER
         msg['To'] = alert_data['email']
-        msg['Subject'] = f"Price Alert: {alert_data['name']} is now ${current_price:.2f}!"
+        msg['Subject'] = f"Price Alert: {alert_data['name']} is now {store_currency} {current_price:.2f}!"
         
         # Email body
         body = f"""
@@ -140,8 +140,8 @@ def send_price_alert_email(alert_data, current_price):
                 <h3>Price Details:</h3>
                 <ul>
                     <li><strong>Product:</strong> {alert_data['name']}</li>
-                    <li><strong>Current Price:</strong> ${current_price:.2f}</li>
-                    <li><strong>Your Target Price:</strong> ${alert_data['target_price']:.2f}</li>
+                    <li><strong>Current Price:</strong> {store_currency} {current_price:.2f}</li>
+                    <li><strong>Your Target Price:</strong> {store_currency} {alert_data['target_price']:.2f}</li>
                     <li><strong>Store:</strong> {alert_data['store']}</li>
                 </ul>
             </div>
@@ -164,45 +164,77 @@ def send_price_alert_email(alert_data, current_price):
         server.send_message(msg)
         server.quit()
         
-        print(f"Price alert email sent for {alert_data['name']} at ${current_price:.2f}")
+        print(f"Price alert email sent for {alert_data['name']} at {store_currency} {current_price:.2f}")
         return True
         
     except Exception as e:
         print(f"Error sending price alert email: {e}")
         return False
 
-def check_price_for_alert(alert_id, alert_data):
+def check_price_for_alert(alert_id, alert_data, update_current_price=False):
     """Check current price for a specific alert and send notification if target is reached."""
     try:
         # Use existing scrapers to get current price
         product_name = alert_data['name']
         store = alert_data['store']
         
-        # Map store names to scraper functions
+        print(f"DEBUG: Checking price for '{product_name}' on {store}")
+        
+        # Map store names to scraper functions and currencies
         store_scrapers = {
-            'Jumia': scrape_jumia,
-            'Melcom': scrape_melcom,
-            'CompuGhana': scrape_compughana,
-            'Amazon': scrape_amazon
+            'Jumia': (scrape_jumia, 'GHS'),
+            'Melcom': (scrape_melcom, 'GHS'),
+            'CompuGhana': (scrape_compughana, 'GHS'),
+            'Amazon': (scrape_amazon, 'USD')
         }
         
         if store not in store_scrapers:
             print(f"Unknown store: {store}")
-            return
+            return None
         
-        # Scrape current price
-        scraper_func = store_scrapers[store]
-        current_products = scraper_func(product_name, max_results=5)
+        # Scrape current price - only the specific store
+        scraper_func, store_currency = store_scrapers[store]
+        current_products = scraper_func(product_name, max_results=10)  # Get more results for better matching
         
         if not current_products:
             print(f"No products found for {product_name} on {store}")
-            return
+            return None
         
-        # Find the best match (lowest price)
-        best_product = min(current_products, key=lambda x: x.get('price', float('inf')))
-        current_price_str = best_product.get('price', '0')
+        print(f"DEBUG: Found {len(current_products)} products on {store}")
+        
+        # Find the best match by name similarity and price
+        best_product = None
+        best_match_score = 0
+        
+        for product in current_products:
+            current_name = product.get('name', '').lower()
+            target_name = product_name.lower()
+            
+            # Simple name matching - check if key words match
+            target_words = set(target_name.split())
+            current_words = set(current_name.split())
+            common_words = target_words.intersection(current_words)
+            
+            # Calculate match score based on common words
+            if len(target_words) > 0:
+                match_score = len(common_words) / len(target_words)
+            else:
+                match_score = 0
+            
+            print(f"DEBUG: Product '{product.get('name', '')}' - Match score: {match_score:.2f}")
+            
+            if match_score > best_match_score:
+                best_match_score = match_score
+                best_product = product
+        
+        if not best_product or best_match_score < 0.3:  # Require at least 30% word match
+            print(f"DEBUG: No good match found for '{product_name}' on {store}")
+            return None
+        
+        print(f"DEBUG: Best match found: '{best_product.get('name', '')}' (score: {best_match_score:.2f})")
         
         # Parse price
+        current_price_str = best_product.get('price', '0')
         import re
         price_clean = re.sub(r'[^\d.,]', '', str(current_price_str))
         if price_clean:
@@ -210,21 +242,35 @@ def check_price_for_alert(alert_id, alert_data):
         else:
             current_price = 0
         
-        print(f"Current price for {product_name}: ${current_price:.2f}, Target: ${alert_data['target_price']:.2f}")
+        print(f"DEBUG: Current price: {store_currency} {current_price:.2f}, Target: {store_currency} {alert_data['target_price']:.2f}")
         
-        # Check if target price is reached
+        # Update current price in database if requested
+        if update_current_price and current_price > 0:
+            with sqlite3.connect(DATABASE) as conn:
+                cursor = conn.cursor()
+                cursor.execute('UPDATE price_alerts SET current_price = ? WHERE id = ?', (current_price, alert_id))
+                conn.commit()
+            print(f"DEBUG: Updated current price to {store_currency} {current_price:.2f} for alert {alert_id}")
+        
+        # Check if target price is reached (current price is lower than or equal to target)
         if current_price > 0 and current_price <= alert_data['target_price']:
+            print(f"DEBUG: Target price reached! Current: {store_currency} {current_price:.2f} <= Target: {store_currency} {alert_data['target_price']:.2f}")
             # Send notification
-            if send_price_alert_email(alert_data, current_price):
+            if send_price_alert_email(alert_data, current_price, store_currency):
                 # Deactivate alert
                 with sqlite3.connect(DATABASE) as conn:
                     cursor = conn.cursor()
                     cursor.execute('UPDATE price_alerts SET is_active = 0 WHERE id = ?', (alert_id,))
                     conn.commit()
                 print(f"Alert {alert_id} deactivated - target price reached!")
+            return current_price
+        else:
+            print(f"DEBUG: Target price not reached. Current: {store_currency} {current_price:.2f} > Target: {store_currency} {alert_data['target_price']:.2f}")
+            return current_price
         
     except Exception as e:
         print(f"Error checking price for alert {alert_id}: {e}")
+        return None
 
 def check_all_price_alerts():
     """Check all active price alerts."""
@@ -240,7 +286,11 @@ def check_all_price_alerts():
             ''', (MAX_PRICE_CHECKS_PER_RUN,))
             active_alerts = cursor.fetchall()
         
-        print(f"Checking {len(active_alerts)} active price alerts...")
+        print(f"DEBUG: Found {len(active_alerts)} active price alerts")
+        
+        if not active_alerts:
+            print("DEBUG: No active alerts found")
+            return
         
         for alert in active_alerts:
             alert_data = {
@@ -254,6 +304,7 @@ def check_all_price_alerts():
                 'created_at': alert[7]
             }
             
+            print(f"DEBUG: Checking alert {alert[0]} for product: {alert[1]}")
             # Check price for this alert
             check_price_for_alert(alert[0], alert_data)
             
@@ -261,7 +312,7 @@ def check_all_price_alerts():
             time.sleep(DELAY_BETWEEN_CHECKS)
             
     except Exception as e:
-        print(f"Error in check_all_price_alerts: {e}")
+        print(f"DEBUG: Error in check_all_price_alerts: {e}")
 
 def start_price_monitoring():
     """Start the background price monitoring service."""
@@ -453,7 +504,7 @@ def upload_file():
                         orig_price = parse_price(p['price'])
                         if orig_price is not None:
                             converted = convert_price(orig_price, currency, store_currency[key])
-                            p['converted_price'] = converted
+                            p['converted_price'] = converted if converted is not None else orig_price
                             p['converted_currency'] = currency
                         else:
                             p['converted_price'] = None
@@ -479,12 +530,18 @@ def upload_file():
                         p['store'] = 'Amazon'
                     all_products.extend(scraping_results['amazon_products'])
                 def get_converted_price(x):
-                    return x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf')
+                    price = x.get('converted_price')
+                    return price if price is not None else float('inf')
                 if all_products:
                     cheapest_item = min(all_products, key=get_converted_price)
                 # Find the cheapest product in each store (use converted_price)
                 def get_cheapest(products):
-                    return min(products, key=get_converted_price) if products else None
+                    if not products:
+                        return None
+                    try:
+                        return min(products, key=get_converted_price)
+                    except (ValueError, TypeError):
+                        return None
                 cheapest_jumia = get_cheapest(scraping_results.get('products', []))
                 cheapest_melcom = get_cheapest(scraping_results.get('melcom_products', []))
                 cheapest_compughana = get_cheapest(scraping_results.get('compughana_products', []))
@@ -555,6 +612,10 @@ def search_products():
             # Scrape all stores
             scraping_results = scrape_all_sources(query, results_per_page)
 
+        print(f"DEBUG: Scraping results keys: {list(scraping_results.keys())}")
+        for key, products in scraping_results.items():
+            print(f"DEBUG: {key} has {len(products)} products")
+
         # Ensure every product has the correct 'store' field
         store_map = {
             'products': 'Jumia',
@@ -572,6 +633,8 @@ def search_products():
             for p in products:
                 p['source_key'] = key
                 all_products.append(p)
+
+        print(f"DEBUG: Total products before price conversion: {len(all_products)}")
 
         # Helper to parse price strings
         def parse_price(price_str):
@@ -594,31 +657,65 @@ def search_products():
             'amazon_products': 'USD',
         }
         for p in all_products:
+            print(f"DEBUG: Processing product: {p.get('name', 'Unknown')[:50]}...")
+            print(f"DEBUG: Original price: {p.get('price', 'None')}")
+            
+            # Ensure price field exists
+            if 'price' not in p:
+                p['price'] = None
+                
             orig_price = parse_price(p['price'])
+            print(f"DEBUG: Parsed price: {orig_price}")
+            
             if orig_price is not None:
-                converted = convert_price(orig_price, currency, store_currency.get(p['source_key'], 'GHS'))
-                p['converted_price'] = converted
+                try:
+                    converted = convert_price(orig_price, currency, store_currency.get(p['source_key'], 'GHS'))
+                    print(f"DEBUG: Converted price: {converted}")
+                    p['converted_price'] = converted if converted is not None else orig_price
+                except Exception as e:
+                    print(f"DEBUG: Error in price conversion: {e}")
+                    p['converted_price'] = orig_price
                 p['converted_currency'] = currency
             else:
                 p['converted_price'] = None
                 p['converted_currency'] = currency
+            print(f"DEBUG: Final converted_price: {p['converted_price']}")
 
+        print(f"DEBUG: Starting price filtering...")
         # Apply advanced filters
         filtered_products = []
         for p in all_products:
+            # Ensure all required fields exist
+            if 'name' not in p:
+                p['name'] = 'Unknown Product'
+            if 'store' not in p:
+                p['store'] = 'Unknown Store'
+            if 'converted_price' not in p:
+                p['converted_price'] = None
+                
             # Price filter
             price = p.get('converted_price')
-            if min_price:
+            print(f"DEBUG: Checking product {p.get('name', 'Unknown')[:30]} with price: {price}")
+            
+            if min_price and price is not None:
                 try:
-                    if price is None or price < float(min_price):
+                    min_price_float = float(min_price)
+                    print(f"DEBUG: Comparing {price} < {min_price_float}")
+                    if price < min_price_float:
+                        print(f"DEBUG: Skipping - price too low")
                         continue
-                except ValueError:
+                except (ValueError, TypeError) as e:
+                    print(f"DEBUG: Error in min_price comparison: {e}")
                     pass
-            if max_price:
+            if max_price and price is not None:
                 try:
-                    if price is None or price > float(max_price):
+                    max_price_float = float(max_price)
+                    print(f"DEBUG: Comparing {price} > {max_price_float}")
+                    if price > max_price_float:
+                        print(f"DEBUG: Skipping - price too high")
                         continue
-                except ValueError:
+                except (ValueError, TypeError) as e:
+                    print(f"DEBUG: Error in max_price comparison: {e}")
                     pass
             # Store filter
             if store_filter and store_filter != '':
@@ -640,15 +737,22 @@ def search_products():
                     continue
             filtered_products.append(p)
 
+        print(f"DEBUG: Filtered products count: {len(filtered_products)}")
         # Sorting
         if sort_by == 'price_low':
+            print(f"DEBUG: Sorting by price_low")
             filtered_products.sort(key=lambda x: x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf'))
         elif sort_by == 'price_high':
+            print(f"DEBUG: Sorting by price_high")
             filtered_products.sort(key=lambda x: x.get('converted_price', float('-inf')) if x.get('converted_price') is not None else float('-inf'), reverse=True)
         elif sort_by == 'name':
+            print(f"DEBUG: Sorting by name")
             filtered_products.sort(key=lambda x: x.get('name', '').lower())
         elif sort_by == 'store':
+            print(f"DEBUG: Sorting by store")
             filtered_products.sort(key=lambda x: x.get('store', ''))
+
+        print(f"DEBUG: Sorting completed")
 
         # Split filtered_products by store and limit to results_per_page
         jumia_products = [p for p in filtered_products if p.get('store') == 'Jumia'][:results_per_page]
@@ -656,31 +760,64 @@ def search_products():
         compughana_products = [p for p in filtered_products if p.get('store') == 'CompuGhana'][:results_per_page]
         amazon_products = [p for p in filtered_products if p.get('store') == 'Amazon'][:results_per_page]
 
+        print(f"DEBUG: Split products - Jumia: {len(jumia_products)}, Melcom: {len(melcom_products)}, CompuGhana: {len(compughana_products)}, Amazon: {len(amazon_products)}")
+
         # Find the cheapest product in each store (use converted_price)
         def get_converted_price(x):
-            return x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf')
+            price = x.get('converted_price')
+            if price is None:
+                return float('inf')
+            try:
+                return float(price)
+            except (ValueError, TypeError):
+                return float('inf')
         def get_cheapest(products):
-            return min(products, key=get_converted_price) if products else None
+            if not products:
+                return None
+            try:
+                return min(products, key=get_converted_price)
+            except (ValueError, TypeError) as e:
+                print(f"DEBUG: Error in get_cheapest: {e}")
+                return None
+        print(f"DEBUG: Finding cheapest products...")
         cheapest_jumia = get_cheapest(jumia_products)
         cheapest_melcom = get_cheapest(melcom_products)
         cheapest_compughana = get_cheapest(compughana_products)
         cheapest_amazon = get_cheapest(amazon_products)
+        print(f"DEBUG: Cheapest products found")
 
         # Strip currency symbols from original price for local stores
         def strip_ghs(price):
+            if price is None:
+                return ''
             return re.sub(r'^(GHS|GH₵|₵|GHC|Ghc|ghc|gh₵|Ghs|Ghs|GHS|GHS)\s*', '', str(price)).strip()
         for p in jumia_products + melcom_products + compughana_products:
             p['original_price_clean'] = strip_ghs(p['price'])
-            p['original_price_with_symbol'] = p['price']  # Keep original with symbol
+            p['original_price_with_symbol'] = p['price'] if p.get('price') else ''  # Keep original with symbol
         for p in amazon_products:
-            p['original_price_clean'] = p['price']
-            p['original_price_with_symbol'] = p['price']  # Keep original with symbol
+            p['original_price_clean'] = p.get('price', '')
+            p['original_price_with_symbol'] = p.get('price', '')  # Keep original with symbol
 
         # Save search history
         save_search_history(query, 'text', len(filtered_products))
 
         # Find the overall cheapest item (use converted_price)
-        cheapest_item = min(filtered_products, key=lambda x: x.get('converted_price', float('inf')), default=None)
+        print(f"DEBUG: Finding overall cheapest item from {len(filtered_products)} products")
+        try:
+            def safe_get_price(x):
+                price = x.get('converted_price')
+                if price is None:
+                    return float('inf')
+                try:
+                    return float(price)
+                except (ValueError, TypeError):
+                    return float('inf')
+            
+            cheapest_item = min(filtered_products, key=safe_get_price) if filtered_products else None
+            print(f"DEBUG: Overall cheapest item found: {cheapest_item.get('name', 'Unknown') if cheapest_item else 'None'}")
+        except Exception as e:
+            print(f"DEBUG: Error finding overall cheapest item: {e}")
+            cheapest_item = None
 
         return render_template(
             'result.html',
@@ -727,11 +864,18 @@ def wishlist():
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM wishlist ORDER BY added_at DESC')
             wishlist_items = cursor.fetchall()
+            
+            # Calculate unique stores count
+            unique_stores = set()
+            for item in wishlist_items:
+                if item[5]:  # item[5] is the store field
+                    unique_stores.add(item[5])
+            unique_stores_count = len(unique_stores)
         
-        return render_template('wishlist.html', wishlist_items=wishlist_items)
+        return render_template('wishlist.html', wishlist_items=wishlist_items, unique_stores_count=unique_stores_count)
     except Exception as e:
         flash('Error loading wishlist', 'error')
-        return render_template('wishlist.html', wishlist_items=[])
+        return render_template('wishlist.html', wishlist_items=[], unique_stores_count=0)
 
 @app.route('/add-to-wishlist', methods=['POST'])
 def add_to_wishlist():
@@ -769,9 +913,58 @@ def remove_from_wishlist(item_id):
 def manual_check_price_alerts():
     """Manually trigger price alert checking for testing."""
     try:
+        print("DEBUG: Manual price alert check triggered")
         check_all_price_alerts()
+        print("DEBUG: Manual price alert check completed")
         return jsonify({'success': True, 'message': 'Price alerts checked successfully'})
     except Exception as e:
+        print(f"DEBUG: Error in manual price alert check: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/check-single-price-alert/<int:alert_id>', methods=['POST'])
+def check_single_price_alert(alert_id):
+    """Check and update a single price alert."""
+    try:
+        print(f"DEBUG: Checking single alert {alert_id}")
+        
+        # Get alert data
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, product_name, target_price, current_price, product_link, store, email, created_at
+                FROM price_alerts 
+                WHERE id = ? AND is_active = 1
+            ''', (alert_id,))
+            alert_data = cursor.fetchone()
+        
+        if not alert_data:
+            return jsonify({'success': False, 'message': 'Alert not found or inactive'})
+        
+        alert_info = {
+            'id': alert_data[0],
+            'name': alert_data[1],
+            'target_price': alert_data[2],
+            'current_price': alert_data[3],
+            'link': alert_data[4],
+            'store': alert_data[5],
+            'email': alert_data[6],
+            'created_at': alert_data[7]
+        }
+        
+        # Check price for this specific alert
+        current_price = check_price_for_alert(alert_id, alert_info, update_current_price=True)
+        
+        if current_price is not None:
+            return jsonify({
+                'success': True, 
+                'message': 'Price updated successfully',
+                'current_price': current_price
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Could not fetch current price'})
+            
+    except Exception as e:
+        print(f"DEBUG: Error checking single alert {alert_id}: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/price-alerts')
@@ -833,6 +1026,19 @@ def deactivate_price_alert(alert_id):
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Price alert deactivated'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/activate-price-alert/<int:alert_id>', methods=['POST'])
+def activate_price_alert(alert_id):
+    """Activate a price alert."""
+    try:
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE price_alerts SET is_active = 1 WHERE id = ?', (alert_id,))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Price alert activated'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 

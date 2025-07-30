@@ -1,0 +1,20 @@
+# Email Configuration for Price Alerts
+# Copy this file to config.py and update with your settings
+
+# Gmail SMTP Settings
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USER = 'your-email@gmail.com'  # Your Gmail address
+EMAIL_PASSWORD = 'your-app-password'  # Gmail App Password (not regular password)
+SENDER_NAME = 'Pic2Price Price Alerts'
+EMAIL_SUBJECT_PREFIX = 'Price Alert:'
+
+# Price Monitoring Settings
+PRICE_CHECK_INTERVAL_HOURS = 6  # How often to check prices (in hours)
+MAX_PRICE_CHECKS_PER_RUN = 10  # Maximum alerts to check per run
+DELAY_BETWEEN_CHECKS = 2  # Delay between checking individual alerts (seconds)
+
+# Optional: Customize these settings as needed
+# PRICE_CHECK_INTERVAL_HOURS = 12  # Check every 12 hours instead
+# MAX_PRICE_CHECKS_PER_RUN = 20   # Check more alerts per run
+# DELAY_BETWEEN_CHECKS = 1        # Faster checking 

@@ -122,11 +122,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressBar.style.width = progress + '%';
                 progressText.textContent = progress + '%';
                 
-                // Update status messages
-                if (progress === 30) {
-                    statusText.textContent = 'Analyzing image...';
-                } else if (progress === 60) {
-                    statusText.textContent = 'Processing results...';
+                // Update status messages with more accurate descriptions
+                if (progress === 10) {
+                    statusText.textContent = 'Uploading image...';
+                } else if (progress === 30) {
+                    statusText.textContent = 'Analyzing image with AI...';
+                } else if (progress === 50) {
+                    statusText.textContent = 'Identifying product...';
+                } else if (progress === 70) {
+                    statusText.textContent = 'Searching Jumia...';
+                } else if (progress === 80) {
+                    statusText.textContent = 'Searching Melcom...';
+                } else if (progress === 85) {
+                    statusText.textContent = 'Searching CompuGhana...';
+                } else if (progress === 90) {
+                    statusText.textContent = 'Searching Amazon...';
                 }
             }
         }, 300);

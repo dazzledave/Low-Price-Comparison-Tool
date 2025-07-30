@@ -1,61 +1,101 @@
-# Ignore the virtual environment
-venv/
-
-# Ignore compiled Python files
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Ignore uploaded images
-uploads/
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 
-# Ignore system files
-.DS_Store
-Thumbs.db
-
-# Ignore environment variables
-.env
-
-# Ignore Python bytecode
-*.pyc
-*.pyo
-*.pyd
-
-# Ignore test cache and coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Ignore SQLite and other database files
+# Database files
 *.db
 *.sqlite3
+feedback.db
 
-# Ignore cache and search cache
-cache_manager.pyc
+# Cache and temporary files
 search_cache/
+cache_manager.pyc
+*.cache
+*.tmp
+*.bak
 
-# Ignore static user files
+# Uploaded files
+uploads/
 Static/uploads/
-Static/*.log
 
-# Ignore IDE/editor files
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and Editor files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 *.sublime-workspace
 *.sublime-project
 
-# Ignore OS files
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Ignore environment variables
-.env
+# Log files
+*.log
+logs/
 
-# Ignore debug and temp files
-*.bak
-*.tmp
-melcom_debug*.html
-
-# Ignore CompuGhana debug HTML files
-compughana_debug_*.html
-
-#Ignore test files
+# Test files
 test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Debug files
+melcom_debug*.html
+compughana_debug_*.html
+jumia_debug*.html
+amazon_debug*.html
+
+# Model files (if large)
+models/*.pth
+models/*.h5
+models/*.pb
+
+# Configuration files with sensitive data
+config.py

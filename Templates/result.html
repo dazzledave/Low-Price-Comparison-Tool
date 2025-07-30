@@ -38,17 +38,7 @@
             </div>
             {% endif %}
 
-            {% if filename %}
-            <form action="{{ url_for('submit_feedback') }}" method="POST">
-                <input type="hidden" name="filename" value="{{ filename }}">
-                <input type="hidden" name="label" value="{{ label }}">
-                <p>Was this prediction correct?</p>
-                <div class="feedback-buttons">
-                    <button type="submit" name="feedback" value="Yes">Yes</button>
-                    <button type="submit" name="feedback" value="No">No</button>
-                </div>
-            </form>
-            {% endif %}
+
 
             <br>
             <a href="{{ url_for('upload_file') }}" class="btn">{% if filename %}Upload Another Image{% else %}New Search{% endif %}</a>
@@ -142,6 +132,9 @@
                             <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
                                 <i class="fas fa-heart"></i> Add to Wishlist
                             </button>
+                            <button type="button" class="btn-alert" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", ""), "converted_price": product.get("converted_price", ""), "converted_currency": product.get("converted_currency", "") }|tojson|safe }}' onclick="openPriceAlertModal(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-bell"></i> Set Alert
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -193,6 +186,9 @@
                             <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
                             <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
                                 <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                            <button type="button" class="btn-alert" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", ""), "converted_price": product.get("converted_price", ""), "converted_currency": product.get("converted_currency", "") }|tojson|safe }}' onclick="openPriceAlertModal(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-bell"></i> Set Alert
                             </button>
                         </div>
                     </div>
@@ -246,6 +242,9 @@
                             <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
                                 <i class="fas fa-heart"></i> Add to Wishlist
                             </button>
+                            <button type="button" class="btn-alert" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", ""), "converted_price": product.get("converted_price", ""), "converted_currency": product.get("converted_currency", "") }|tojson|safe }}' onclick="openPriceAlertModal(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-bell"></i> Set Alert
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -298,6 +297,9 @@
                             <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
                                 <i class="fas fa-heart"></i> Add to Wishlist
                             </button>
+                            <button type="button" class="btn-alert" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", ""), "converted_price": product.get("converted_price", ""), "converted_currency": product.get("converted_currency", "") }|tojson|safe }}' onclick="openPriceAlertModal(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-bell"></i> Set Alert
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -308,6 +310,65 @@
             </div>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Price Alert Modal -->
+<div id="price-alert-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-bell"></i> Set Price Alert</h2>
+            <button class="modal-close" onclick="closePriceAlertModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="product-preview">
+                <img id="modal-product-image" src="" alt="Product Image">
+                <div class="product-details">
+                    <h3 id="modal-product-name"></h3>
+                    <p class="current-price">Current Price: <span id="modal-current-price"></span></p>
+                    <p class="store-info">Store: <span id="modal-store"></span></p>
+                </div>
+            </div>
+            
+            <form id="price-alert-form">
+                <div class="form-group">
+                    <label for="target-price">Target Price:</label>
+                    <input type="number" id="target-price" name="target_price" step="0.01" required>
+                    <small class="price-suggestion">Suggested: <span id="price-suggestion"></span></small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="alert-email">Email (Optional):</label>
+                    <input type="email" id="alert-email" name="email" placeholder="your@email.com">
+                    <small>Leave empty to receive notifications in the app</small>
+                </div>
+                
+                <div class="alert-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="multiple-alerts" name="multiple_alerts">
+                        <span class="checkmark"></span>
+                        Set multiple price alerts
+                    </label>
+                </div>
+                
+                <div id="multiple-alerts-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="alert-price-2">Second Target Price:</label>
+                        <input type="number" id="alert-price-2" name="target_price_2" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="alert-price-3">Third Target Price:</label>
+                        <input type="number" id="alert-price-3" name="target_price_3" step="0.01">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closePriceAlertModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="createPriceAlert()">
+                <i class="fas fa-bell"></i> Create Alert
+            </button>
+        </div>
     </div>
 </div>
 
@@ -492,6 +553,145 @@ function exportResults() {
         showNotification('Error exporting results', 'error');
     });
 }
+
+// Price Alert Modal Functions
+let currentProduct = null;
+
+function openPriceAlertModal(product) {
+    currentProduct = product;
+    
+    // Populate modal with product details
+    document.getElementById('modal-product-name').textContent = product.name;
+    document.getElementById('modal-current-price').textContent = formatPrice(product.converted_price, product.converted_currency);
+    document.getElementById('modal-store').textContent = product.store;
+    
+    // Set product image
+    const productImage = document.getElementById('modal-product-image');
+    if (product.image) {
+        productImage.src = product.image;
+        productImage.style.display = 'block';
+    } else {
+        productImage.style.display = 'none';
+    }
+    
+    // Calculate and suggest target price (10% below current price)
+    const currentPrice = parseFloat(product.converted_price) || 0;
+    const suggestedPrice = currentPrice * 0.9;
+    document.getElementById('price-suggestion').textContent = formatPrice(suggestedPrice, product.converted_currency);
+    
+    // Set default target price
+    document.getElementById('target-price').value = suggestedPrice.toFixed(2);
+    
+    // Show modal
+    document.getElementById('price-alert-modal').style.display = 'flex';
+}
+
+function closePriceAlertModal() {
+    document.getElementById('price-alert-modal').style.display = 'none';
+    currentProduct = null;
+    
+    // Reset form
+    document.getElementById('price-alert-form').reset();
+    document.getElementById('multiple-alerts-section').style.display = 'none';
+}
+
+function createPriceAlert() {
+    if (!currentProduct) return;
+    
+    const targetPrice = parseFloat(document.getElementById('target-price').value);
+    const email = document.getElementById('alert-email').value;
+    const multipleAlerts = document.getElementById('multiple-alerts').checked;
+    
+    if (!targetPrice || targetPrice <= 0) {
+        showNotification('Please enter a valid target price', 'error');
+        return;
+    }
+    
+    // Create alert data
+    const alertData = {
+        name: currentProduct.name,
+        current_price: parseFloat(currentProduct.converted_price) || 0,
+        target_price: targetPrice,
+        link: currentProduct.link,
+        store: currentProduct.store,
+        email: email
+    };
+    
+    // Create the main alert
+    fetch('/create-price-alert', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(alertData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Price alert created successfully!', 'success');
+            
+            // Create additional alerts if multiple alerts is checked
+            if (multipleAlerts) {
+                const price2 = parseFloat(document.getElementById('alert-price-2').value);
+                const price3 = parseFloat(document.getElementById('alert-price-3').value);
+                
+                const additionalAlerts = [];
+                if (price2 && price2 > 0) {
+                    additionalAlerts.push({...alertData, target_price: price2});
+                }
+                if (price3 && price3 > 0) {
+                    additionalAlerts.push({...alertData, target_price: price3});
+                }
+                
+                // Create additional alerts
+                Promise.all(additionalAlerts.map(alert => 
+                    fetch('/create-price-alert', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(alert)
+                    }).then(r => r.json())
+                )).then(results => {
+                    const successCount = results.filter(r => r.success).length;
+                    if (successCount > 0) {
+                        showNotification(`${successCount} additional alerts created!`, 'success');
+                    }
+                });
+            }
+            
+            closePriceAlertModal();
+        } else {
+            showNotification('Error creating price alert: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error creating price alert', 'error');
+    });
+}
+
+function formatPrice(price, currency) {
+    if (!price || price <= 0) return 'Price not available';
+    return `${currency} ${parseFloat(price).toFixed(2)}`;
+}
+
+// Multiple alerts toggle
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('multiple-alerts').addEventListener('change', function() {
+        const multipleSection = document.getElementById('multiple-alerts-section');
+        if (this.checked) {
+            multipleSection.style.display = 'block';
+        } else {
+            multipleSection.style.display = 'none';
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('price-alert-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePriceAlertModal();
+        }
+    });
+});
 </script>
 
 <style>
@@ -544,6 +744,7 @@ function exportResults() {
 .action-buttons {
     display: flex;
     gap: 5px;
+    flex-wrap: wrap;
 }
 
 .btn-wishlist,
