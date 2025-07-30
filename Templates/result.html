@@ -102,6 +102,7 @@
         </div>
 
         <!-- Jumia Products -->
+        {% if not store_filter or store_filter == 'jumia' %}
         <div id="jumia-container" class="store-container">
             <div class="store-header">
                 <span class="store-icon"><i class="fa-solid fa-store"></i></span>
@@ -129,10 +130,19 @@
                                     <span class="original-price">({{ product.original_price_with_symbol }})</span>
                                 {% endif %}
                             {% else %}
-                                {{ product.price }}
+                                {% if product.price %}
+                                    {{ product.price }}
+                                {% else %}
+                                    Price not available
+                                {% endif %}
                             {% endif %}
                         </div>
-                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                        <div class="action-buttons">
+                            <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                            <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -141,8 +151,10 @@
             {% endif %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Melcom Products -->
+        {% if not store_filter or store_filter == 'melcom' %}
         <div id="melcom-container" class="store-container">
             <div class="store-header">
                 <span class="store-icon"><i class="fa-solid fa-store"></i></span>
@@ -170,10 +182,19 @@
                                     <span class="original-price">({{ product.original_price_with_symbol }})</span>
                                 {% endif %}
                             {% else %}
-                                {{ product.price }}
+                                {% if product.price %}
+                                    {{ product.price }}
+                                {% else %}
+                                    Price not available
+                                {% endif %}
                             {% endif %}
                         </div>
-                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                        <div class="action-buttons">
+                            <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                            <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -182,8 +203,10 @@
             {% endif %}
             </div>
         </div>
+        {% endif %}
 
         <!-- CompuGhana Products -->
+        {% if not store_filter or store_filter == 'compughana' %}
         <div id="compughana-container" class="store-container">
             <div class="store-header">
                 <span class="store-icon"><i class="fa-solid fa-store"></i></span>
@@ -211,10 +234,19 @@
                                     <span class="original-price">({{ product.original_price_with_symbol }})</span>
                                 {% endif %}
                             {% else %}
-                                {{ product.price }}
+                                {% if product.price %}
+                                    {{ product.price }}
+                                {% else %}
+                                    Price not available
+                                {% endif %}
                             {% endif %}
                         </div>
-                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                        <div class="action-buttons">
+                            <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                            <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -223,8 +255,10 @@
             {% endif %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Amazon Products -->
+        {% if not store_filter or store_filter == 'amazon' %}
         <div id="amazon-container" class="store-container">
             <div class="store-header">
                 <span class="store-icon"><i class="fa-brands fa-amazon"></i></span>
@@ -252,10 +286,19 @@
                                     <span class="original-price">({{ product.original_price_with_symbol }})</span>
                                 {% endif %}
                             {% else %}
-                                {{ product.price }}
+                                {% if product.price %}
+                                    {{ product.price }}
+                                {% else %}
+                                    Price not available
+                                {% endif %}
                             {% endif %}
                         </div>
-                        <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                        <div class="action-buttons">
+                            <a href="{{ product.link }}" target="_blank" class="btn view-btn"><span class="btn-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span> View Product</a>
+                            <button type="button" class="btn-wishlist" data-product='{{ {"name": product.get("name", ""), "price": product.get("price", ""), "link": product.get("link", ""), "image": product.get("image", ""), "store": product.get("store", "") }|tojson|safe }}' onclick="addToWishlist(JSON.parse(this.getAttribute('data-product')))" >
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -264,6 +307,7 @@
             {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -325,5 +369,220 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     }, hasProducts() ? 2000 : 3000);
 });
+
+// Wishlist and Price Alert Functions
+function addToWishlist(product) {
+    console.log('addToWishlist called', product);
+    const data = product;
+    
+    fetch('/add-to-wishlist', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Added to wishlist!', 'success');
+        } else {
+            showNotification('Error adding to wishlist: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error adding to wishlist', 'error');
+    });
+}
+
+function createPriceAlert(name, currentPrice, link, store) {
+    const targetPrice = prompt(`Set target price for "${name}" (current: $${currentPrice}):`);
+    
+    if (targetPrice && !isNaN(targetPrice)) {
+        const data = {
+            name: name,
+            current_price: currentPrice,
+            target_price: parseFloat(targetPrice),
+            link: link,
+            store: store,
+            email: ''
+        };
+        
+        fetch('/create-price-alert', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Price alert created!', 'success');
+            } else {
+                showNotification('Error creating price alert: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error creating price alert', 'error');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Export results function
+function exportResults() {
+    const products = [];
+    document.querySelectorAll('.product-card').forEach(card => {
+        const name = card.querySelector('.product-name').textContent;
+        const price = card.querySelector('.product-price-badge').textContent;
+        const link = card.querySelector('.view-btn').href;
+        const image = card.querySelector('img')?.src || '';
+        const store = card.closest('.store-container').querySelector('.store-title').textContent.split(' ')[0];
+        
+        products.push({ name, price, link, image, store });
+    });
+    
+    fetch('/export-results', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ products })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Create and download CSV
+            const blob = new Blob([data.csv_data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'search_results.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showNotification('Results exported successfully!', 'success');
+        } else {
+            showNotification('Error exporting results: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error exporting results', 'error');
+    });
+}
 </script>
+
+<style>
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--container-bg);
+    color: var(--text-color);
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    animation: slideInRight 0.3s ease;
+}
+
+.notification-success {
+    border-left: 4px solid #28a745;
+}
+
+.notification-error {
+    border-left: 4px solid #dc3545;
+}
+
+.notification button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.notification button:hover {
+    opacity: 1;
+}
+
+/* Product actions styles */
+.product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-wishlist,
+.btn-alert {
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-wishlist {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-wishlist:hover {
+    background: #c0392b;
+}
+
+.btn-alert {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-alert:hover {
+    background: #e67e22;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
 {% endblock %}

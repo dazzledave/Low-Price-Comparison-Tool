@@ -15,7 +15,8 @@ import re
 load_dotenv()
 
 # Use the key from the .env file
-SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API', '')
+print(f"[MELCOM SCRAPER] Using API key: {SCRAPERAPI_KEY[:6]}... (length: {len(SCRAPERAPI_KEY)})")
 
 def scrape_melcom(query, max_results=5):
     """
@@ -110,11 +111,20 @@ def _mobile_api_request(query, max_results, timeout=15):
                 link = _generate_simple_link(name, product_id, sku)
                 print(f"Generated link: {link}")
             
+            # In _mobile_api_request, after building each product dict:
+            # (Assume in_stock True unless 'out of stock' in name or custom_attributes)
+            in_stock = True
+            name_lower = name.lower()
+            if 'out of stock' in name_lower:
+                in_stock = False
+            # Optionally, check custom_attributes for stock info
+            # ...
             results.append({
-                'name': name,
-                'price': f"GHS {price}",
-                'link': link,
-                'image': image
+                'name': name or '',
+                'price': price or '',
+                'link': link or '',
+                'image': image or '',
+                'in_stock': in_stock if in_stock is not None else True
             })
         except Exception as e:
             print(f"Error processing product from API: {e}")
@@ -248,11 +258,17 @@ def _parse_html_results(html_content, max_results):
             else:
                 link = original_link
 
+            # In _parse_html_results, after building each product dict:
+            in_stock = True
+            out_of_stock_tag = card.find(string=re.compile("out of stock", re.I))
+            if out_of_stock_tag:
+                in_stock = False
             results.append({
-                'name': name,
-                'price': price,
-                'link': link,
-                'image': image
+                'name': name or '',
+                'price': price or '',
+                'link': link or '',
+                'image': image or '',
+                'in_stock': in_stock if in_stock is not None else True
             })
         except Exception as e:
             print(f"Error processing product from HTML: {e}")

@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API', '')
+print(f"[AMAZON SCRAPER] Using API key: {SCRAPERAPI_KEY[:6]}... (length: {len(SCRAPERAPI_KEY)})")
+
 def scrape_amazon(query, max_results=5):
     # Get API key from environment
-    SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
     
     # Try multiple ScraperAPI configurations for Amazon
     configs_to_try = [
@@ -231,12 +233,17 @@ def _parse_results(html_content, max_results):
             # Get ASIN (Amazon Standard Identification Number) if available
             asin = product.get('data-asin', '')
             
+            in_stock = True
+            out_of_stock_tag = product.find(string=re.compile("out of stock|currently unavailable|unavailable", re.I))
+            if out_of_stock_tag:
+                in_stock = False
             result = {
-                'name': name,
-                'price': price,
-                'link': link,
-                'image': image,
-                'asin': asin
+                'name': name or '',
+                'price': price or '',
+                'link': link or '',
+                'image': image or '',
+                'asin': asin,
+                'in_stock': in_stock if in_stock is not None else True
             }
             
             print(f"  ✅ Product {i+1} processed successfully")

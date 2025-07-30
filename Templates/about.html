@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}About | Pic2Price - AI Price Comparison{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1>About <span class="brand-name">Pic2Price</span></h1>
+    <p class="hero-subtitle">Snap. Compare. Save. — Your AI-powered price comparison tool for smarter shopping in Ghana and beyond.</p>
+</div>
+<div class="features">
+    <h2>What is Pic2Price?</h2>
+    <p><strong>Pic2Price</strong> is an innovative platform that leverages artificial intelligence to help you find the best deals on products across top online stores like Jumia, Melcom, CompuGhana, and Amazon. Whether you have a product image or a name, Pic2Price makes price comparison effortless and accurate.</p>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="fas fa-camera fa-2x"></i>
+            <h3>Image Search</h3>
+            <p>Upload a product photo and let our AI recognize it, then instantly compare prices across multiple stores.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-search fa-2x"></i>
+            <h3>Text Search</h3>
+            <p>Type a product name or keyword to quickly find and compare prices from leading retailers.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-heart fa-2x"></i>
+            <h3>Wishlist</h3>
+            <p>Save your favorite products and track their prices over time, all in one place.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-bell fa-2x"></i>
+            <h3>Price Alerts</h3>
+            <p>Set your target price and get notified when a product drops to your desired amount.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-chart-bar fa-2x"></i>
+            <h3>Analytics</h3>
+            <p>View price trends, popular searches, and historical data to make informed buying decisions.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-moon fa-2x"></i>
+            <h3>Modern UI</h3>
+            <p>Enjoy a sleek, user-friendly interface with full dark mode support for comfortable browsing.</p>
+        </div>
+    </div>
+</div>
+<hr class="section-divider">
+<div class="features">
+    <h2><i class="fas fa-brain"></i> AI Models & Recognition</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="fas fa-robot fa-2x"></i>
+            <h3>CLIP Model</h3>
+            <p>We use OpenAI's CLIP (Contrastive Language–Image Pretraining) model for powerful image-to-text recognition, enabling users to search for products using photos with high accuracy.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-image fa-2x"></i>
+            <h3>Custom Classifiers</h3>
+            <p>Custom-trained image classifiers further refine product recognition, ensuring relevant and precise search results for a wide range of products.</p>
+        </div>
+    </div>
+</div>
+<hr class="section-divider">
+<div class="features">
+    <h2><i class="fas fa-cogs"></i> Services & Technologies</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="fab fa-python fa-2x"></i>
+            <h3>Python & Flask</h3>
+            <p>The backend is built with Flask, a lightweight Python web framework, ensuring fast and reliable performance.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-database fa-2x"></i>
+            <h3>SQLite Database</h3>
+            <p>All user data, search history, wishlists, and price alerts are securely stored using SQLite for simplicity and portability.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-cloud fa-2x"></i>
+            <h3>Web Scraping</h3>
+            <p>Custom scrapers fetch real-time product data from Jumia, Melcom, CompuGhana, and Amazon, ensuring up-to-date price comparisons.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-exchange-alt fa-2x"></i>
+            <h3>Currency Conversion</h3>
+            <p>Automatic currency conversion lets you compare prices in your preferred currency, using up-to-date exchange rates.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-chart-line fa-2x"></i>
+            <h3>Analytics Engine</h3>
+            <p>Track price trends, popular searches, and product history with built-in analytics and data visualization tools.</p>
+        </div>
+    </div>
+</div>
+<hr class="section-divider">
+<div class="features">
+    <h2><i class="fas fa-project-diagram"></i> System Architecture</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="fas fa-server fa-2x"></i>
+            <h3>Modular Design</h3>
+            <p>Pic2Price is organized into modules for scraping, image recognition, data management, and user interaction, making it robust and maintainable.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-network-wired fa-2x"></i>
+            <h3>Concurrent Scraping</h3>
+            <p>Uses Python's ThreadPoolExecutor to scrape multiple stores in parallel, delivering fast results even for complex searches.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-shield-alt fa-2x"></i>
+            <h3>Security & Privacy</h3>
+            <p>User data is handled securely, with privacy in mind. No personal data is shared with third parties.</p>
+        </div>
+    </div>
+</div>
+<hr class="section-divider">
+<div class="cta">
+    <h2>Why Choose Pic2Price?</h2>
+    <ul>
+        <li>Save time and money by comparing prices from top retailers in one place.</li>
+        <li>Leverage AI for accurate product recognition and smart search results.</li>
+        <li>Track your favorite products and never miss a deal.</li>
+        <li>Enjoy a modern, user-friendly interface with dark mode support.</li>
+    </ul>
+</div>
+<div class="how-it-works">
+    <h2>How It Works</h2>
+    <ol class="steps">
+        <li class="step"><span class="step-number">1</span> <strong>Upload an image</strong> or enter a product name.</li>
+        <li class="step"><span class="step-number">2</span> <strong>Let our AI recognize</strong> the product and search for it across multiple stores.</li>
+        <li class="step"><span class="step-number">3</span> <strong>Compare prices</strong> and find the best deal instantly.</li>
+        <li class="step"><span class="step-number">4</span> <strong>Add to wishlist</strong> or set a price alert to track future deals.</li>
+    </ol>
+</div>
+<div class="features">
+    <h2>Our Mission</h2>
+    <p>We aim to empower shoppers with transparent, up-to-date pricing information and AI-driven tools to make smarter purchasing decisions. Pic2Price is your trusted companion for finding the best value, every time you shop.</p>
+</div>
+<div class="cta">
+    <a href="{{ url_for('home') }}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %} 

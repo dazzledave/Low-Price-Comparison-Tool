@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Pic2Price{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <div class="analytics-header">
+        <h1><i class="fas fa-chart-bar"></i> Analytics Dashboard</h1>
+        <p>Insights and statistics about your price comparison activities</p>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_searches }}</h3>
+                <p>Total Searches</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_wishlist }}</h3>
+                <p>Wishlist Items</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ active_alerts }}</h3>
+                <p>Active Alerts</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_price_records }}</h3>
+                <p>Price Records</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Analytics -->
+    <div class="analytics-section">
+        <h2>Search Analytics</h2>
+        <div class="analytics-grid">
+            <div class="chart-card">
+                <h3>Search Types</h3>
+                <div class="chart-container">
+                    <canvas id="searchTypeChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Daily Search Activity</h3>
+                <div class="chart-container">
+                    <canvas id="dailySearchChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Searches -->
+    <div class="analytics-section">
+        <h2>Popular Searches</h2>
+        <div class="popular-searches">
+            {% for search in popular_searches %}
+            <div class="search-item">
+                <div class="search-rank">{{ loop.index }}</div>
+                <div class="search-info">
+                    <h4>{{ search[0] }}</h4>
+                    <p>{{ search[1] }} searches</p>
+                </div>
+                <div class="search-bar">
+                    <div class="search-progress" style="width: {{ (search[1] / popular_searches[0][1] * 100)|round }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Price Trends -->
+    <div class="analytics-section">
+        <h2>Price Trends</h2>
+        <div class="price-trends">
+            {% for trend in price_trends %}
+            <div class="trend-card">
+                <div class="trend-header">
+                    <h4>{{ trend[0] }}</h4>
+                    <span class="store-badge">{{ trend[1] }}</span>
+                </div>
+                <div class="trend-stats">
+                    <div class="trend-stat">
+                        <span class="label">Average Price:</span>
+                        <span class="value">${{ "%.2f"|format(trend[2]) }}</span>
+                    </div>
+                    <div class="trend-stat">
+                        <span class="label">Price Range:</span>
+                        <span class="value">${{ "%.2f"|format(trend[3]) }} - ${{ "%.2f"|format(trend[4]) }}</span>
+                    </div>
+                    <div class="trend-stat">
+                        <span class="label">Price Points:</span>
+                        <span class="value">{{ trend[5] }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="analytics-section">
+        <h2>Export Data</h2>
+        <div class="export-options">
+            <button class="btn btn-primary" onclick="exportSearchHistory()">
+                <i class="fas fa-download"></i> Export Search History
+            </button>
+            <button class="btn btn-primary" onclick="exportPriceHistory()">
+                <i class="fas fa-download"></i> Export Price History
+            </button>
+            <button class="btn btn-primary" onclick="exportAnalytics()">
+                <i class="fas fa-download"></i> Export Full Analytics
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Search Type Chart
+const searchTypeCtx = document.getElementById('searchTypeChart').getContext('2d');
+const searchTypeData = {
+    labels: ['Image Search', 'Text Search'],
+    datasets: [{
+        data: [
+            {{ search_stats|selectattr('0', 'equalto', 'image')|map(attribute='1')|sum }},
+            {{ search_stats|selectattr('0', 'equalto', 'text')|map(attribute='1')|sum }}
+        ],
+        backgroundColor: ['#FF6384', '#36A2EB'],
+        borderWidth: 0
+    }]
+};
+
+new Chart(searchTypeCtx, {
+    type: 'doughnut',
+    data: searchTypeData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Daily Search Chart
+const dailySearchCtx = document.getElementById('dailySearchChart').getContext('2d');
+const dailySearchData = {
+    labels: [{% for stat in search_stats|groupby('2') %}'{{ stat.grouper }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Searches',
+        data: [{% for stat in search_stats|groupby('2') %}{{ stat.list|map(attribute='1')|sum }}{% if not loop.last %}, {% endif %}{% endfor %}],
+        borderColor: '#4BC0C0',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4
+    }]
+};
+
+new Chart(dailySearchCtx, {
+    type: 'line',
+    data: dailySearchData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+function exportSearchHistory() {
+    // Implementation for exporting search history
+    alert('Export feature coming soon!');
+}
+
+function exportPriceHistory() {
+    // Implementation for exporting price history
+    alert('Export feature coming soon!');
+}
+
+function exportAnalytics() {
+    // Implementation for exporting full analytics
+    alert('Export feature coming soon!');
+}
+</script>
+
+<style>
+.analytics-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.analytics-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.analytics-header h1 {
+    color: var(--brand-color);
+    margin-bottom: 10px;
+}
+
+.analytics-header p {
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: var(--container-bg);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    font-size: 2.5em;
+    color: var(--brand-accent);
+}
+
+.stat-content h3 {
+    font-size: 2em;
+    margin: 0;
+    color: var(--brand-color);
+}
+
+.stat-content p {
+    margin: 5px 0 0 0;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.analytics-section {
+    margin-bottom: 40px;
+}
+
+.analytics-section h2 {
+    color: var(--brand-color);
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--brand-accent);
+    padding-bottom: 10px;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.chart-card {
+    background: var(--container-bg);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.chart-card h3 {
+    color: var(--brand-color);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.popular-searches {
+    background: var(--container-bg);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.search-item:last-child {
+    border-bottom: none;
+}
+
+.search-rank {
+    background: var(--brand-accent);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.search-info {
+    flex: 1;
+}
+
+.search-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--brand-color);
+}
+
+.search-info p {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.search-bar {
+    width: 200px;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.search-progress {
+    height: 100%;
+    background: var(--brand-accent);
+    transition: width 0.3s ease;
+}
+
+.price-trends {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.trend-card {
+    background: var(--container-bg);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: transform 0.3s ease;
+}
+
+.trend-card:hover {
+    transform: translateY(-5px);
+}
+
+.trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.trend-header h4 {
+    margin: 0;
+    color: var(--brand-color);
+    font-size: 1.1em;
+}
+
+.store-badge {
+    background: var(--brand-accent);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.trend-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.trend-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.trend-stat .label {
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.trend-stat .value {
+    color: var(--brand-color);
+    font-weight: bold;
+}
+
+.export-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.export-options .btn {
+    padding: 15px 25px;
+    font-size: 1em;
+}
+
+@media (max-width: 768px) {
+    .stats-overview {
+        grid-template-columns: 1fr;
+    }
+    
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .price-trends {
+        grid-template-columns: 1fr;
+    }
+    
+    .search-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .search-bar {
+        width: 100%;
+    }
+    
+    .export-options {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+{% endblock %} 

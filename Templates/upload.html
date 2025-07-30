@@ -55,6 +55,10 @@
                 </select>
             </div>
         </form>
+        <div id="text-search-loading" style="display: none; position: relative;">
+            <div class="loading-spinner" style="margin: 40px auto;"></div>
+            <div class="loading-message" style="text-align:center; color: var(--brand-color); font-size: 1.2em; font-weight: bold;">Searching for products...</div>
+        </div>
     </div>
 
     <div id="upload-loading" style="display: none;">
@@ -138,11 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             return;
         }
-        
-        // Show loading animation
+        // Show dedicated text search loading overlay
         searchForm.style.display = 'none';
-        loadingDiv.style.display = 'block';
-        statusText.textContent = 'Searching for products...';
+        document.querySelector('#text-search-loading').style.display = 'block';
     });
 });
 </script>

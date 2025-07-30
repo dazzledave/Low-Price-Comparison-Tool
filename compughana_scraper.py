@@ -7,9 +7,10 @@ from cache_manager import CacheManager
 from dotenv import load_dotenv
 
 load_dotenv()
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API', '')
+print(f"[COMPUGHANA SCRAPER] Using API key: {SCRAPERAPI_KEY[:6]}... (length: {len(SCRAPERAPI_KEY)})")
 
 def scrape_compughana(query, max_results=5):
-    SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
     cache = CacheManager()
     cached_results = cache.get_cached_results(query, 'compughana')
     if cached_results:
@@ -152,12 +153,17 @@ def _parse_results(html_content, max_results):
                 print(f"No image found for product {i+1}, HTML: {str(product)[:300]}")
             if link and not link.startswith('http'):
                 link = 'https://compughana.com' + link
+            in_stock = True
+            out_of_stock_tag = product.find(string=re.compile("out of stock", re.I))
+            if out_of_stock_tag:
+                in_stock = False
             if name:
                 results.append({
-                    'name': name,
-                    'price': price,
-                    'link': link,
-                    'image': image
+                    'name': name or '',
+                    'price': price or '',
+                    'link': link or '',
+                    'image': image or '',
+                    'in_stock': in_stock if in_stock is not None else True
                 })
         except Exception as e:
             print(f"Error parsing product {i+1}: {e}")
