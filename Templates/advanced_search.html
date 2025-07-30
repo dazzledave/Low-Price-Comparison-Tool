@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Advanced Search - Pic2Price{% endblock %}
+{% block content %}
+<div class="search-container">
+    <div class="search-header">
+        <h1><i class="fas fa-sliders-h"></i> Advanced Search</h1>
+        <p>Use advanced filters to find exactly what you need across all supported stores.</p>
+    </div>
+    
+    <!-- Search Type Tabs -->
+    <div class="search-tabs">
+        <button class="tab-btn active" onclick="switchTab('text')" id="text-tab">
+            <i class="fas fa-search"></i> Text Search
+        </button>
+        <button class="tab-btn" onclick="switchTab('image')" id="image-tab">
+            <i class="fas fa-camera"></i> Image Search
+        </button>
+    </div>
+
+    <!-- Text Search Section -->
+    <div id="text-search-section" class="search-section active">
+        <div class="search-form-container" style="position:relative;">
+            <form method="POST" class="search-form" id="advanced-search-form">
+                <div class="form-group">
+                    <label for="query">Search Query:</label>
+                    <input type="text" id="query" name="query" placeholder="Enter product name, brand, or description..." required value="{{ request.form.get('query', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="currency">Currency:</label>
+                    <select name="currency" id="currency" class="currency-select">
+                        <option value="GHS" {% if selected_currency == 'GHS' %}selected{% endif %}>GHS (Ghana Cedi)</option>
+                        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>USD (US Dollar)</option>
+                        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>EUR (Euro)</option>
+                        <option value="GBP" {% if selected_currency == 'GBP' %}selected{% endif %}>GBP (British Pound)</option>
+                        <option value="NGN" {% if selected_currency == 'NGN' %}selected{% endif %}>NGN (Nigerian Naira)</option>
+                    </select>
+                </div>
+                <div class="search-filters">
+                    <h3>Advanced Filters</h3>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="min-price">Minimum Price:</label>
+                            <input type="number" id="min-price" name="min_price" placeholder="0" min="0" step="0.01" value="{{ min_price or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-price">Maximum Price:</label>
+                            <input type="number" id="max-price" name="max_price" placeholder="1000" min="0" step="0.01" value="{{ max_price or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="store-filter">Store Filter:</label>
+                            <select name="store_filter" id="store-filter">
+                                <option value="" {% if not store_filter %}selected{% endif %}>All Stores</option>
+                                <option value="jumia" {% if store_filter == 'jumia' %}selected{% endif %}>Jumia</option>
+                                <option value="melcom" {% if store_filter == 'melcom' %}selected{% endif %}>Melcom</option>
+                                <option value="compughana" {% if store_filter == 'compughana' %}selected{% endif %}>CompuGhana</option>
+                                <option value="amazon" {% if store_filter == 'amazon' %}selected{% endif %}>Amazon</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category:</label>
+                            <select name="category" id="category">
+                                <option value="" {% if not category %}selected{% endif %}>All Categories</option>
+                                <option value="laptop" {% if category == 'laptop' %}selected{% endif %}>Laptop</option>
+                                <option value="smartphone" {% if category == 'smartphone' %}selected{% endif %}>Smartphone</option>
+                                <option value="headphones" {% if category == 'headphones' %}selected{% endif %}>Headphones</option>
+                                <option value="tv" {% if category == 'tv' %}selected{% endif %}>TV</option>
+                                <option value="accessory" {% if category == 'accessory' %}selected{% endif %}>Accessory</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="in-stock">&nbsp;</label>
+                            <div style="margin-top: 8px;">
+                                <input type="checkbox" id="in-stock" name="in_stock" {% if in_stock == 'on' %}checked{% endif %}>
+                                <label for="in-stock" style="display:inline;">In-stock only</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="results-per-page">Results per store:</label>
+                            <select name="results_per_page" id="results-per-page">
+                                <option value="5" {% if results_per_page == 5 or not results_per_page %}selected{% endif %}>5</option>
+                                <option value="10" {% if results_per_page == 10 %}selected{% endif %}>10</option>
+                                <option value="15" {% if results_per_page == 15 %}selected{% endif %}>15</option>
+                                <option value="20" {% if results_per_page == 20 %}selected{% endif %}>20</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="sort-by">Sort By:</label>
+                            <select name="sort_by" id="sort-by">
+                                <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                                <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name: A to Z</option>
+                                <option value="store" {% if sort_by == 'store' %}selected{% endif %}>Store</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search Products
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearTextForm()">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
+                <input type="hidden" name="page" id="page-input" value="{{ page or 1 }}">
+            </form>
+            <div id="text-search-loading-overlay" style="display:none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-message">Searching...</div>
+            </div>
+        </div>
+        
+        <div class="search-tips">
+            <h3>Search Tips</h3>
+            <ul>
+                <li>Use specific product names for better results</li>
+                <li>Include brand names when searching for electronics</li>
+                <li>Try different variations of product names</li>
+                <li>Use filters to narrow down your search</li>
+                <li>Compare prices across different stores</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Image Search Section -->
+    <div id="image-search-section" class="search-section">
+        <div class="search-form-container" style="position:relative;">
+            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="search-form" id="image-search-form">
+                <div class="form-group">
+                    <label for="file">Upload Image:</label>
+                    <input type="file" id="file" name="file" accept="image/*" required>
+                    <small>Supported formats: PNG, JPG, JPEG</small>
+                </div>
+                <div class="form-group">
+                    <label for="image-model">AI Model:</label>
+                    <select name="model" id="image-model">
+                        <option value="clip">CLIP (Recommended)</option>
+                        <option value="inception">InceptionV3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image-currency">Currency:</label>
+                    <select name="currency" id="image-currency" class="currency-select">
+                        <option value="GHS">GHS (Ghana Cedi)</option>
+                        <option value="USD">USD (US Dollar)</option>
+                        <option value="EUR">EUR (Euro)</option>
+                        <option value="GBP">GBP (British Pound)</option>
+                        <option value="NGN">NGN (Nigerian Naira)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image-results-per-page">Results per store:</label>
+                    <select name="results_per_page" id="image-results-per-page">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="search-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Search by Image
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearImageForm()">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
+            </form>
+            <div id="image-search-loading-overlay" style="display:none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-message">Analyzing image...</div>
+            </div>
+        </div>
+        
+        <div class="image-search-tips">
+            <h3>Image Search Tips</h3>
+            <ul>
+                <li>Use clear, well-lit photos of the product</li>
+                <li>Ensure the product is the main focus of the image</li>
+                <li>Avoid cluttered backgrounds for better recognition</li>
+                <li>Try different angles if recognition fails</li>
+                <li>CLIP model works best for general product recognition</li>
+                <li>InceptionV3 is specialized for specific categories</li>
+            </ul>
+        </div>
+    </div>
+
+    {% if total_results is defined %}
+    <div class="results-summary">
+        <p><strong>{{ total_results }}</strong> results found. Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong>.</p>
+        <div class="active-filters">
+            <span>Active Filters:</span>
+            {% if min_price %}<span>Min Price: {{ min_price }}</span>{% endif %}
+            {% if max_price %}<span>Max Price: {{ max_price }}</span>{% endif %}
+            {% if store_filter %}<span>Store: {{ store_filter|capitalize }}</span>{% endif %}
+            {% if category %}<span>Category: {{ category|capitalize }}</span>{% endif %}
+            {% if in_stock == 'on' %}<span>In-stock only</span>{% endif %}
+        </div>
+    </div>
+    <div class="pagination">
+        {% if page > 1 %}
+            <button class="btn" onclick="goToPage({{ page - 1 }})">&laquo; Prev</button>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+            <button class="btn {% if p == page %}btn-primary{% endif %}" onclick="goToPage({{ p }})">{{ p }}</button>
+        {% endfor %}
+        {% if page < total_pages %}
+            <button class="btn" onclick="goToPage({{ page + 1 }})">Next &raquo;</button>
+        {% endif %}
+    </div>
+    <script>
+    function goToPage(p) {
+        document.getElementById('page-input').value = p;
+        document.getElementById('advanced-search-form').submit();
+    }
+    </script>
+    {% endif %}
+    
+    <div class="search-suggestions">
+        <h3>Popular Searches</h3>
+        <div class="suggestion-tags">
+            <button class="suggestion-tag" onclick="setSearchQuery('laptop')">Laptop</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('smartphone')">Smartphone</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('headphones')">Headphones</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('gaming')">Gaming</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('camera')">Camera</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('tablet')">Tablet</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('speaker')">Speaker</button>
+            <button class="suggestion-tag" onclick="setSearchQuery('keyboard')">Keyboard</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    // Hide all sections
+    document.querySelectorAll('.search-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section and activate tab
+    if (tab === 'text') {
+        document.getElementById('text-search-section').classList.add('active');
+        document.getElementById('text-tab').classList.add('active');
+    } else if (tab === 'image') {
+        document.getElementById('image-search-section').classList.add('active');
+        document.getElementById('image-tab').classList.add('active');
+    }
+}
+
+function setSearchQuery(query) {
+    document.getElementById('query').value = query;
+}
+
+function clearTextForm() {
+    document.getElementById('query').value = '';
+    document.getElementById('min-price').value = '';
+    document.getElementById('max-price').value = '';
+    document.getElementById('store-filter').value = '';
+    document.getElementById('category').value = '';
+    document.getElementById('in-stock').checked = false;
+    document.getElementById('results-per-page').value = '5';
+    document.getElementById('sort-by').value = 'price_low';
+}
+
+function clearImageForm() {
+    document.getElementById('file').value = '';
+    document.getElementById('image-model').value = 'clip';
+    document.getElementById('image-currency').value = 'GHS';
+    document.getElementById('image-results-per-page').value = '5';
+}
+
+document.getElementById('advanced-search-form').addEventListener('submit', function() {
+    document.getElementById('text-search-loading-overlay').style.display = 'flex';
+});
+
+document.getElementById('image-search-form').addEventListener('submit', function() {
+    document.getElementById('image-search-loading-overlay').style.display = 'flex';
+});
+</script>
+{% endblock %} 

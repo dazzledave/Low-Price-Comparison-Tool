@@ -10,7 +10,8 @@ import time
 import re
 
 # Use the key from the .env file
-SCRAPERAPI_KEY = os.getenv('SCRAPER_API')
+SCRAPERAPI_KEY = os.getenv('SCRAPER_API', '')
+print(f"[JUMIA SCRAPER] Using API key: {SCRAPERAPI_KEY[:6]}... (length: {len(SCRAPERAPI_KEY)})")
 
 def scrape_jumia(query, max_results=5):
     cache = CacheManager()
@@ -138,11 +139,18 @@ def _parse_results(html_content, max_results):
             # Generate a more reliable link
             reliable_link = _generate_reliable_link(name, link)
             
+            # Check for out-of-stock indicator
+            in_stock = True
+            out_of_stock_tag = product.find(string=re.compile("out of stock", re.I))
+            if out_of_stock_tag:
+                in_stock = False
+
             results.append({
-                'name': name,
-                'price': price,
-                'link': reliable_link,
-                'image': image
+                'name': name or '',
+                'price': price or '',
+                'link': reliable_link or '',
+                'image': image or '',
+                'in_stock': in_stock if in_stock is not None else True
             })
             
             print(f"  Successfully processed product {i+1}")

@@ -1,0 +1,696 @@
+{% extends "base.html" %}
+
+{% block title %}Price Alerts - Pic2Price{% endblock %}
+
+{% block content %}
+<div class="alerts-container">
+    <div class="alerts-header">
+        <h1><i class="fas fa-bell"></i> Price Alerts</h1>
+        <p>Get notified when product prices drop to your target price</p>
+    </div>
+
+    {% if alerts %}
+        <div class="alerts-list">
+            <h2>Price Alerts</h2>
+            <div class="alerts-controls">
+                <button class="btn btn-primary" id="check-prices-btn" onclick="checkPriceAlerts()">
+                    <i class="fas fa-sync"></i> Check All Alert Prices
+                </button>
+                <div id="check-prices-loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <span>Checking prices...</span>
+                </div>
+                <span class="last-check">Last checked: <span id="last-check-time">Never</span></span>
+            </div>
+            <div class="alerts-grid">
+                {% for alert in alerts %}
+                <div class="alert-card" data-id="{{ alert[0] }}">
+                    <div class="alert-header">
+                        <h3>{{ alert[1] }}</h3>
+                        <span class="alert-status {% if alert[7] %}active{% else %}inactive{% endif %}">
+                            {% if alert[7] %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="alert-details">
+                        <div class="price-info">
+                            <div class="current-price">
+                                <span class="label">Current:</span>
+                                <span class="price">
+                                    {% if alert[5] == 'Amazon' %}
+                                        ${{ "%.2f"|format(alert[3]) }}
+                                    {% else %}
+                                        GH₵{{ "%.2f"|format(alert[3]) }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="target-price">
+                                <span class="label">Target:</span>
+                                <span class="price">
+                                    {% if alert[5] == 'Amazon' %}
+                                        ${{ "%.2f"|format(alert[2]) }}
+                                    {% else %}
+                                        GH₵{{ "%.2f"|format(alert[2]) }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="price-difference">
+                            {% set difference = alert[3] - alert[2] %}
+                            {% if difference > 0 %}
+                                <span class="difference positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    {% if alert[5] == 'Amazon' %}
+                                        ${{ "%.2f"|format(difference) }} above target
+                                    {% else %}
+                                        GH₵{{ "%.2f"|format(difference) }} above target
+                                    {% endif %}
+                                </span>
+                            {% else %}
+                                <span class="difference negative">
+                                    <i class="fas fa-arrow-up"></i>
+                                    {% if alert[5] == 'Amazon' %}
+                                        ${{ "%.2f"|format(difference|abs) }} below target
+                                    {% else %}
+                                        GH₵{{ "%.2f"|format(difference|abs) }} below target
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert-meta">
+                            <div class="store">
+                                <i class="fas fa-store"></i>
+                                {{ alert[5] }}
+                            </div>
+                            <div class="created">
+                                <i class="fas fa-calendar"></i>
+                                {{ alert[8] }}
+                            </div>
+                            {% if alert[6] %}
+                            <div class="email">
+                                <i class="fas fa-envelope"></i>
+                                {{ alert[6] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="alert-actions">
+                        <a href="{{ alert[4] }}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt"></i> View Product
+                        </a>
+                        <button class="btn btn-info" onclick="checkSingleAlert({{ alert[0] }}, '{{ alert[1] }}')" {% if not alert[7] %}style="display: none;"{% endif %}>
+                            <i class="fas fa-search"></i> Check Price
+                        </button>
+                        <button class="btn btn-warning" onclick="deactivateAlert({{ alert[0] }})" {% if not alert[7] %}style="display: none;"{% endif %}>
+                            <i class="fas fa-pause"></i> Deactivate
+                        </button>
+                        <button class="btn btn-success" onclick="activateAlert({{ alert[0] }})" {% if alert[7] %}style="display: none;"{% endif %}>
+                            <i class="fas fa-play"></i> Activate
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteAlert({{ alert[0] }})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-alerts">
+            <div class="empty-icon">
+                <i class="fas fa-bell-slash"></i>
+            </div>
+            <h2>No price alerts yet</h2>
+            <p>Create your first price alert to get notified when prices drop!</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteAlert(alertId) {
+    if (confirm('Are you sure you want to delete this price alert?')) {
+        fetch(`/delete-price-alert/${alertId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`[data-id="${alertId}"]`).remove();
+            } else {
+                alert('Error deleting price alert');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting price alert');
+        });
+    }
+}
+
+function deactivateAlert(alertId) {
+    if (confirm('Are you sure you want to deactivate this price alert?')) {
+        fetch(`/deactivate-price-alert/${alertId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const alertCard = document.querySelector(`[data-id="${alertId}"]`);
+                if (alertCard) {
+                    // Update status
+                    const statusSpan = alertCard.querySelector('.alert-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = 'Inactive';
+                        statusSpan.classList.remove('active');
+                        statusSpan.classList.add('inactive');
+                    }
+                    
+                    // Hide the deactivate and check price buttons, show activate button
+                    const deactivateBtn = alertCard.querySelector('.btn-warning');
+                    const checkPriceBtn = alertCard.querySelector('.btn-info');
+                    const activateBtn = alertCard.querySelector('.btn-success');
+                    
+                    if (deactivateBtn) deactivateBtn.style.display = 'none';
+                    if (checkPriceBtn) checkPriceBtn.style.display = 'none';
+                    if (activateBtn) activateBtn.style.display = 'inline-flex';
+                }
+            } else {
+                alert('Error deactivating price alert');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deactivating price alert');
+        });
+    }
+}
+
+function activateAlert(alertId) {
+    if (confirm('Are you sure you want to activate this price alert?')) {
+        fetch(`/activate-price-alert/${alertId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const alertCard = document.querySelector(`[data-id="${alertId}"]`);
+                if (alertCard) {
+                    // Update status
+                    const statusSpan = alertCard.querySelector('.alert-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = 'Active';
+                        statusSpan.classList.remove('inactive');
+                        statusSpan.classList.add('active');
+                    }
+                    
+                    // Show the deactivate and check price buttons, hide activate button
+                    const deactivateBtn = alertCard.querySelector('.btn-warning');
+                    const checkPriceBtn = alertCard.querySelector('.btn-info');
+                    const activateBtn = alertCard.querySelector('.btn-success');
+                    
+                    if (deactivateBtn) deactivateBtn.style.display = 'inline-flex';
+                    if (checkPriceBtn) checkPriceBtn.style.display = 'inline-flex';
+                    if (activateBtn) activateBtn.style.display = 'none';
+                }
+            } else {
+                alert('Error activating price alert');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error activating price alert');
+        });
+    }
+}
+
+function checkPriceAlerts() {
+    console.log('Checking price alerts...');
+    
+    // Show loading animation
+    const btn = document.getElementById('check-prices-btn');
+    const loading = document.getElementById('check-prices-loading');
+    const lastCheck = document.getElementById('last-check-time');
+    
+    btn.style.display = 'none';
+    loading.style.display = 'flex';
+    
+    fetch('/check-price-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response:', data);
+        
+        // Hide loading animation
+        btn.style.display = 'inline-flex';
+        loading.style.display = 'none';
+        
+        // Update last check time
+        const now = new Date();
+        lastCheck.textContent = now.toLocaleTimeString();
+        
+        if (data.success) {
+            alert('Price alerts checked successfully!');
+            location.reload();
+        } else {
+            alert('Error checking price alerts: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Hide loading animation
+        btn.style.display = 'inline-flex';
+        loading.style.display = 'none';
+        
+        alert('Error checking price alerts');
+    });
+}
+
+function checkSingleAlert(alertId, productName) {
+    if (confirm(`Are you sure you want to check the price for "${productName}"? This will update the current price in the alert.`)) {
+        fetch(`/check-single-price-alert/${alertId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Price for "${productName}" updated successfully! Current Price: $${data.current_price.toFixed(2)}`);
+                location.reload(); // Reload to update the alert card
+            } else {
+                alert('Error updating price for alert: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating price for alert');
+        });
+    }
+}
+
+// Auto-calculate price difference
+document.getElementById('current-price').addEventListener('input', updatePriceDifference);
+document.getElementById('target-price').addEventListener('input', updatePriceDifference);
+
+// Update currency symbols when store is selected
+document.getElementById('store').addEventListener('change', function() {
+    const store = this.value;
+    const currentSymbol = document.getElementById('current-currency-symbol');
+    const targetSymbol = document.getElementById('target-currency-symbol');
+    
+    if (store === 'Amazon') {
+        currentSymbol.textContent = '$';
+        targetSymbol.textContent = '$';
+    } else {
+        currentSymbol.textContent = 'GH₵';
+        targetSymbol.textContent = 'GH₵';
+    }
+});
+
+function updatePriceDifference() {
+    const currentPrice = parseFloat(document.getElementById('current-price').value) || 0;
+    const targetPrice = parseFloat(document.getElementById('target-price').value) || 0;
+    const store = document.getElementById('store').value;
+    const currency = store === 'Amazon' ? '$' : 'GH₵';
+    
+    if (currentPrice > 0 && targetPrice > 0) {
+        const difference = currentPrice - targetPrice;
+        const differenceElement = document.getElementById('price-difference');
+        
+        if (differenceElement) {
+            if (difference > 0) {
+                differenceElement.innerHTML = `<span class="difference positive">
+                    <i class="fas fa-arrow-down"></i>
+                    ${currency}${difference.toFixed(2)} above target
+                </span>`;
+            } else {
+                differenceElement.innerHTML = `<span class="difference negative">
+                    <i class="fas fa-arrow-up"></i>
+                    ${currency}${Math.abs(difference).toFixed(2)} below target
+                </span>`;
+            }
+        }
+    }
+}
+</script>
+
+<style>
+.alerts-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.alerts-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.alerts-header h1 {
+    color: var(--brand-color);
+    margin-bottom: 10px;
+}
+
+.alerts-header p {
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.create-alert-section {
+    background: var(--container-bg);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    margin-bottom: 30px;
+}
+
+.create-alert-section h2 {
+    color: var(--brand-color);
+    margin-bottom: 20px;
+}
+
+.alert-note {
+    background: #e9ecef;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.alert-note p {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.9;
+    font-size: 0.9em;
+}
+
+.alert-note i {
+    color: var(--brand-color);
+    margin-right: 8px;
+}
+
+.alert-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--brand-accent);
+}
+
+.price-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.currency-symbol {
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 16px;
+    min-width: 30px;
+}
+
+.price-input-group input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 0.85em;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.alerts-list h2 {
+    color: var(--brand-color);
+    margin-bottom: 20px;
+}
+
+.alerts-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+#check-prices-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--brand-color);
+    font-weight: 500;
+}
+
+#check-prices-loading .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--brand-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.last-check {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 0.9em;
+}
+
+.alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.alert-card {
+    background: var(--container-bg);
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    padding: 25px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.alert-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px var(--shadow-color);
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.alert-header h3 {
+    color: var(--brand-color);
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.alert-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.alert-status.active {
+    background: #28a745;
+    color: white;
+}
+
+.alert-status.inactive {
+    background: #6c757d;
+    color: white;
+}
+
+.alert-details {
+    margin-bottom: 20px;
+}
+
+.price-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.current-price,
+.target-price {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.label {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.price {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--brand-accent);
+}
+
+.price-difference {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.difference {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.difference.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.difference.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.alert-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.alert-meta i {
+    margin-right: 5px;
+}
+
+.alert-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.alert-actions .btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 0.9em;
+}
+
+.empty-alerts {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--container-bg);
+    border-radius: 15px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.empty-icon {
+    font-size: 4em;
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+.empty-alerts h2 {
+    color: var(--brand-color);
+    margin-bottom: 15px;
+}
+
+.empty-alerts p {
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .alerts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .price-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .alert-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .alert-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %} 
