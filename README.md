@@ -59,6 +59,22 @@ A comprehensive web application that helps you find the best prices for products
 - **Python 3.8+** (recommended: Python 3.9 or higher)
 - **pip** (Python package manager)
 - **Git** (for cloning the repository)
+- **ScraperAPI Account** (for web scraping functionality)
+
+### Required Services
+
+#### **ScraperAPI Setup**
+This application uses [ScraperAPI](https://www.scraperapi.com/) for reliable web scraping. You'll need:
+
+1. **Sign up** for a free ScraperAPI account
+2. **Get your API key** from the dashboard
+3. **Add to environment variables** (see setup below)
+
+**Why ScraperAPI?**
+- Bypasses anti-bot measures on e-commerce sites
+- Ensures reliable scraping across all supported stores
+- Handles JavaScript rendering for dynamic content
+- Provides consistent results for price comparison
 
 ### Installation
 
@@ -79,18 +95,34 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Set up environment variables** (optional):
+4. **Set up environment variables**:
 ```bash
-cp config.py.example config.py
-# Edit config.py with your email settings for price alerts
+# Create .env file
+touch .env  # On Windows: echo. > .env
 ```
 
-5. **Run the application**:
+5. **Configure .env file**:
+```bash
+# Add your ScraperAPI key
+echo "SCRAPER_API=your_scraperapi_key_here" >> .env
+
+# Optional: Add email configuration for price alerts
+echo "EMAIL_USER=your-email@gmail.com" >> .env
+echo "EMAIL_PASSWORD=your-app-password" >> .env
+```
+
+6. **Set up email configuration** (optional for price alerts):
+```bash
+cp config.py.example config.py
+# Edit config.py with your email settings
+```
+
+7. **Run the application**:
 ```bash
 python mainapp.py
 ```
 
-6. **Open your browser**:
+8. **Open your browser**:
 ```
 http://localhost:5000
 ```
@@ -119,6 +151,19 @@ http://localhost:5000
 - **Export Reports**: Download analytics data
 
 ## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```bash
+# Required: ScraperAPI for web scraping
+SCRAPER_API=your_scraperapi_key_here
+
+# Optional: Email configuration for price alerts
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+```
 
 ### Email Setup for Price Alerts
 
