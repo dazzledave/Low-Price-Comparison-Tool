@@ -7,8 +7,11 @@ Minimal dependencies to avoid build issues
 import os
 from flask import Flask, render_template, request, jsonify
 
-# Initialize Flask app with explicit template folder
-app = Flask(__name__, template_folder='Templates')
+# Initialize Flask app with explicit template and static folders
+app = Flask(__name__, 
+            template_folder='Templates',
+            static_folder='Static',
+            static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
 
 @app.route('/')
