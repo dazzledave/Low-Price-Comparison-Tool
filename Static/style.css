@@ -2395,17 +2395,21 @@ hr {
         margin-right: 0 !important;
         text-align: left !important;
         order: 1 !important;
+        flex: 0 0 auto !important; /* Don't grow or shrink */
     }
     
     /* Show header-right on desktop */
     .header-right {
         display: flex !important;
         order: 3 !important;
+        flex: 0 0 auto !important; /* Don't grow or shrink */
+        gap: 10px !important; /* Reduced gap between user menu and theme toggle */
     }
     
     /* Ensure proper desktop navigation layout */
     .header-content {
         justify-content: space-between !important;
+        gap: 20px !important; /* Reduced gap between elements */
     }
     
     .main-nav {
@@ -2417,30 +2421,36 @@ hr {
         box-shadow: none !important;
         padding-top: 0 !important;
         overflow: visible !important;
+        flex: 1 !important; /* Take available space */
+        display: flex !important;
+        justify-content: center !important; /* Center the navigation */
+        align-items: center !important;
     }
     
     .nav-list {
         flex-direction: row !important;
         padding: 0 !important;
         margin: 0 !important;
+        gap: 5px !important; /* Reduced from default gap */
     }
     
     .nav-item {
-        margin: 0 10px !important;
+        margin: 0 5px !important; /* Reduced from 10px to 5px */
         list-style: none !important;
     }
     
     .nav-link {
-        padding: 10px 15px !important;
+        padding: 8px 12px !important; /* Reduced padding from 10px 15px */
         font-size: 14px !important;
         border-radius: 5px !important;
         display: flex !important;
         align-items: center !important;
-        gap: 5px !important;
+        gap: 4px !important; /* Reduced gap between icon and text */
         text-decoration: none !important;
         color: var(--text-color) !important;
         background: transparent !important;
         transition: background-color 0.3s ease !important;
+        white-space: nowrap !important; /* Prevent text wrapping */
     }
     
     .nav-link:hover {
