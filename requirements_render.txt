@@ -1,0 +1,28 @@
+# Core Flask dependencies
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+Flask-WTF==1.1.1
+WTForms==3.0.1
+
+# Database
+SQLAlchemy==2.0.21
+
+# Web scraping (lightweight)
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Basic image processing (no heavy AI)
+Pillow==10.0.1
+
+# Utilities
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Optional: Lightweight AI (uncomment if needed)
+# tensorflow-cpu==2.13.0
+# opencv-python-headless==4.8.0.76
+
+# Development tools
+python-dateutil==2.8.2 
