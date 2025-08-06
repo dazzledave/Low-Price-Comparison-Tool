@@ -4,19 +4,11 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements_render.txt
-    startCommand: python start.py
+    startCommand: python app.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        value: sqlite:///pic2price.db
-      - key: TF_CPP_MIN_LOG_LEVEL
-        value: "2"
-      - key: CUDA_VISIBLE_DEVICES
-        value: ""
-      - key: TF_FORCE_GPU_ALLOW_GROWTH
-        value: "true"
-      - key: TF_MEMORY_ALLOCATION
-        value: "0.1" 
+      - key: FLASK_ENV
+        value: production 
