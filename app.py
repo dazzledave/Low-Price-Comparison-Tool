@@ -12,8 +12,12 @@ app = Flask(__name__, template_folder='Templates')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
 
 @app.route('/')
-@app.route('/home')
 def index():
+    """Homepage route"""
+    return render_template('index.html')
+
+@app.route('/home')
+def home():
     """Homepage route"""
     return render_template('index.html')
 
@@ -26,6 +30,11 @@ def search():
 @app.route('/upload')
 def upload():
     """Image upload route"""
+    return render_template('upload.html')
+
+@app.route('/upload_file')
+def upload_file():
+    """Image upload route (alias for upload)"""
     return render_template('upload.html')
 
 @app.route('/result')
