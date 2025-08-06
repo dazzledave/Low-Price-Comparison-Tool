@@ -12,6 +12,7 @@ app = Flask(__name__, template_folder='Templates')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
 
 @app.route('/')
+@app.route('/home')
 def index():
     """Homepage route"""
     return render_template('index.html')
@@ -26,6 +27,41 @@ def search():
 def upload():
     """Image upload route"""
     return render_template('upload.html')
+
+@app.route('/result')
+def result():
+    """Results page"""
+    return render_template('result.html')
+
+@app.route('/wishlist')
+def wishlist():
+    """Wishlist page"""
+    return render_template('wishlist.html')
+
+@app.route('/price_alerts')
+def price_alerts():
+    """Price alerts page"""
+    return render_template('price_alerts.html')
+
+@app.route('/analytics')
+def analytics():
+    """Analytics page"""
+    return render_template('analytics.html')
+
+@app.route('/admin')
+def admin():
+    """Admin page"""
+    return render_template('admin.html')
+
+@app.route('/about')
+def about():
+    """About page"""
+    return render_template('about.html')
+
+@app.route('/advanced_search')
+def advanced_search():
+    """Advanced search page"""
+    return render_template('advanced_search.html')
 
 @app.route('/api/health')
 def health_check():
