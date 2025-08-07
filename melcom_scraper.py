@@ -175,7 +175,7 @@ def _clean_product_name(name):
         print(f"Error cleaning product name: {e}")
         return name.lower().replace(' ', '-')
 
-def _scraper_api_request(query, max_results, timeout=30):
+def _scraper_api_request(query, max_results, timeout=15):
     target_url = f"https://melcom.com/catalogsearch/result/?q={urllib.parse.quote(query)}"
     search_url = f"http://api.scraperapi.com/?api_key={SCRAPERAPI_KEY}&render=true&premium=true&country_code=gh&url={target_url}"
     

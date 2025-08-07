@@ -87,7 +87,7 @@ def scrape_amazon(query, max_results=5):
     for i, config in enumerate(configs_to_try, 1):
         try:
             print(f"Attempt {i}: {config['name']}")
-            results = _scraper_api_request_with_config(config, max_results, timeout=60)
+            results = _scraper_api_request_with_config(config, max_results, timeout=15)
             if results:
                 print(f"✅ Success with {config['name']}!")
                 return results
@@ -99,7 +99,7 @@ def scrape_amazon(query, max_results=5):
     print("❌ All ScraperAPI configurations failed")
     return []
 
-def _scraper_api_request_with_config(config, max_results, timeout=60):
+def _scraper_api_request_with_config(config, max_results, timeout=15):
     """Make ScraperAPI request with specific configuration"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

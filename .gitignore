@@ -91,6 +91,8 @@ melcom_debug*.html
 compughana_debug_*.html
 jumia_debug*.html
 amazon_debug*.html
+performance_monitor.py
+PERFORMANCE_OPTIMIZATION.md
 
 # Model files (if large)
 models/*.pth

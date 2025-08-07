@@ -1439,55 +1439,6 @@ hr {
     color: #ffd166 !important;
 }
 
-/* USER MENU DROPDOWN */
-.user-menu-container {
-    position: relative;
-    margin-left: 24px;
-}
-.user-menu-btn {
-    background: none;
-    border: none;
-    color: var(--brand-color);
-    font-size: 2em;
-    cursor: pointer;
-    padding: 0 8px;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-.user-menu-btn:hover {
-    background: #f0f0f0;
-}
-.user-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 110%;
-    min-width: 180px;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    z-index: 1002;
-    padding: 8px 0;
-}
-.user-dropdown.open {
-    display: block;
-}
-.user-dropdown .dropdown-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
-    color: var(--text-color);
-    text-decoration: none;
-    font-size: 1em;
-    transition: background 0.2s, color 0.2s;
-}
-.user-dropdown .dropdown-link:hover {
-    background: #f5f5f5;
-    color: var(--brand-accent);
-}
-
 /* TOP SEARCH BAR */
 .top-search-form {
     display: flex;
@@ -2302,63 +2253,45 @@ hr {
         display: none;
     }
     
-    /* Fix side-by-side layout for user menu and theme toggle */
-    .user-menu-container,
-    .theme-toggle {
-        margin-left: 10px;
-        display: flex;
-        align-items: center;
-    }
-    
-    /* Create a container for the right-side buttons */
     .header-right {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        order: 3;
+        display: flex !important;
+        gap: 10px !important;
     }
     
-    /* Move hamburger button to top left, brand centered, dark mode on right */
     .mobile-menu-btn {
-        order: 1;
-        position: absolute;
-        top: 50%;
-        left: 10px;
-        transform: translateY(-50%);
-        z-index: 1000;
+        order: 1 !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 10px !important;
+        transform: translateY(-50%) !important;
     }
     
     .brand {
-        order: 2;
-        flex: 1;
-        text-align: center; /* Center the brand name */
-        margin: 0 30px; /* More space for hamburger on left and dark mode on right */
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
+        order: 2 !important;
+        text-align: center !important;
+        margin: 0 30px !important;
+        position: relative !important;
+        z-index: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 100% !important;
     }
     
-    /* Show only dark mode toggle on mobile header, hide user menu */
     .header-right {
-        display: flex;
-        order: 3;
-        justify-content: flex-end;
-    }
-    
-    .user-menu-container {
-        display: none !important; /* Hide user menu from header on mobile */
+        order: 3 !important;
+        position: absolute !important;
+        top: 50% !important;
+        right: 30px !important;
+        transform: translateY(-50%) !important;
     }
     
     .theme-toggle {
-        display: flex;
-        position: absolute;
-        top: 50%;
-        right: 30px;
-        transform: translateY(-50%);
-        z-index: 1000;
+        order: 3 !important;
+        position: absolute !important;
+        top: 50% !important;
+        right: 30px !important;
+        transform: translateY(-50%) !important;
     }
     
     /* Overlay when mobile menu is open */
@@ -2462,30 +2395,6 @@ hr {
         width: 16px !important;
         text-align: center !important;
     }
-    
-    /* Ensure user dropdown works properly on desktop */
-    .user-dropdown {
-        position: absolute !important;
-        top: 100% !important;
-        right: 0 !important;
-        background: var(--container-bg) !important;
-        border: 1px solid var(--shadow-color) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 12px var(--shadow-color) !important;
-        min-width: 200px !important;
-        z-index: 1000 !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        transform: translateY(-10px) !important;
-        transition: all 0.3s ease !important;
-        padding: 8px 0 !important;
-    }
-    
-    .user-dropdown.open {
-        opacity: 1 !important;
-        visibility: visible !important;
-        transform: translateY(0) !important;
-    }
 }
 
 /* Dark mode mobile menu */
@@ -2571,7 +2480,6 @@ hr {
     gap: 15px;
 }
 
-.user-menu-container,
 .theme-toggle {
     display: flex;
     align-items: center;
@@ -2588,7 +2496,6 @@ hr {
     justify-content: center;
 }
 
-.user-menu-container,
 .theme-toggle {
     flex: 0 0 auto;
 }

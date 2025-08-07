@@ -20,6 +20,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import threading
 import schedule
+import hashlib
 
 try:
     from config import *
@@ -42,7 +43,12 @@ app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 DATABASE = 'feedback.db'
-SCRAPING_TIMEOUT = 30  # seconds
+SCRAPING_TIMEOUT = 15  # Reduced from 30 to 15 seconds for faster response
+
+# Simple in-memory cache for search results
+search_cache = {}
+CACHE_SIZE = 100
+CACHE_TTL = 300  # 5 minutes cache TTL
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -119,6 +125,36 @@ def init_db():
         conn.commit()
 
 init_db()  # Initialize DB on app start
+
+def get_cache_key(query, max_results, store_filter=None):
+    """Generate a cache key for search results."""
+    cache_data = f"{query.lower().strip()}_{max_results}_{store_filter or 'all'}"
+    return hashlib.md5(cache_data.encode()).hexdigest()
+
+def get_cached_results(cache_key):
+    """Get cached results if they exist and are not expired."""
+    if cache_key in search_cache:
+        timestamp, results = search_cache[cache_key]
+        if time.time() - timestamp < CACHE_TTL:
+            return results
+        else:
+            del search_cache[cache_key]
+    return None
+
+def cache_results(cache_key, results):
+    """Cache search results with timestamp."""
+    if len(search_cache) >= CACHE_SIZE:
+        # Remove oldest entry
+        oldest_key = min(search_cache.keys(), key=lambda k: search_cache[k][0])
+        del search_cache[oldest_key]
+    
+    search_cache[cache_key] = (time.time(), results)
+
+def log_search_performance(query, start_time, results_count, cache_hit=False):
+    """Log search performance metrics."""
+    elapsed_time = time.time() - start_time
+    cache_status = "CACHE_HIT" if cache_hit else "CACHE_MISS"
+    print(f"SEARCH_PERF: Query='{query}' | Time={elapsed_time:.2f}s | Results={results_count} | {cache_status}")
 
 def send_price_alert_email(alert_data, current_price, store_currency):
     """Send email notification when target price is reached."""
@@ -354,6 +390,13 @@ def scrape_with_timeout(scraper_func, args, timeout=SCRAPING_TIMEOUT):
 
 def scrape_all_sources(query, max_results=5):
     """Scrape all sources concurrently using ThreadPoolExecutor with timeout."""
+    # Temporarily disable caching to debug search issues
+    # cache_key = get_cache_key(query, max_results)
+    # cached_results = get_cached_results(cache_key)
+    # if cached_results:
+    #     log_search_performance(query, time.time(), len(cached_results), cache_hit=True)
+    #     return cached_results
+    
     scrapers = {
         'products': (scrape_jumia, (query, max_results)),
         'melcom_products': (scrape_melcom, (query, max_results)),
@@ -362,7 +405,8 @@ def scrape_all_sources(query, max_results=5):
     }
     
     results = {}
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    # Reduced max_workers to 3 for better performance on Render.com
+    with ThreadPoolExecutor(max_workers=3) as executor:
         # Start all scraping tasks
         future_to_source = {
             executor.submit(scrape_with_timeout, func, args): source
@@ -378,10 +422,20 @@ def scrape_all_sources(query, max_results=5):
                 print(f"Error scraping {source}: {str(e)}")
                 results[source] = []
     
+    # Temporarily disable caching
+    # cache_results(cache_key, results)
+    # log_search_performance(query, time.time(), len(results), cache_hit=False)
     return results
 
 def scrape_selected_sources(query, selected_stores, max_results=5):
     """Scrape only selected sources based on store filter."""
+    # Temporarily disable caching to debug search issues
+    # cache_key = get_cache_key(query, max_results, '_'.join(sorted(selected_stores)))
+    # cached_results = get_cached_results(cache_key)
+    # if cached_results:
+    #     log_search_performance(query, time.time(), len(cached_results), cache_hit=True)
+    #     return cached_results
+    
     store_to_scraper = {
         'jumia': (scrape_jumia, 'products'),
         'melcom': (scrape_melcom, 'melcom_products'),
@@ -390,7 +444,8 @@ def scrape_selected_sources(query, selected_stores, max_results=5):
     }
     
     results = {}
-    with ThreadPoolExecutor(max_workers=len(selected_stores)) as executor:
+    # Use fewer workers for selected stores
+    with ThreadPoolExecutor(max_workers=min(len(selected_stores), 2)) as executor:
         # Start scraping tasks only for selected stores
         future_to_source = {
             executor.submit(scrape_with_timeout, func, (query, max_results)): source_key
@@ -407,6 +462,9 @@ def scrape_selected_sources(query, selected_stores, max_results=5):
                 print(f"Error scraping {source_key}: {str(e)}")
                 results[source_key] = []
     
+    # Temporarily disable caching
+    # cache_results(cache_key, results)
+    # log_search_performance(query, time.time(), len(results), cache_hit=False)
     return results
 
 def save_search_history(query, search_type, results_count):
@@ -446,6 +504,7 @@ def home():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
+        start_time = time.time()
         if 'file' not in request.files:
             flash('No file selected', 'error')
             return redirect(request.url)
@@ -560,6 +619,10 @@ def upload_file():
                 # Save price history
                 save_price_history(scraping_results, currency)
 
+                # Temporarily disable performance logging
+                # total_time = time.time() - start_time
+                # print(f"UPLOAD_COMPLETE: Label='{label}' | Total Time={total_time:.2f}s | Results={total_results}")
+
                 flash(f'Successfully found {total_results} products for "{label}"', 'success')
                 return render_template(
                     'result.html',
@@ -587,6 +650,7 @@ def upload_file():
 @app.route('/search', methods=['POST'])
 def search_products():
     """Handle advanced product search."""
+    start_time = time.time()  # Add missing start_time definition
     query = request.form.get('query', '').strip()
     currency = request.form.get('currency', 'GHS')
     min_price = request.form.get('min_price')
@@ -612,10 +676,6 @@ def search_products():
             # Scrape all stores
             scraping_results = scrape_all_sources(query, results_per_page)
 
-        print(f"DEBUG: Scraping results keys: {list(scraping_results.keys())}")
-        for key, products in scraping_results.items():
-            print(f"DEBUG: {key} has {len(products)} products")
-
         # Ensure every product has the correct 'store' field
         store_map = {
             'products': 'Jumia',
@@ -633,8 +693,6 @@ def search_products():
             for p in products:
                 p['source_key'] = key
                 all_products.append(p)
-
-        print(f"DEBUG: Total products before price conversion: {len(all_products)}")
 
         # Helper to parse price strings
         def parse_price(price_str):
@@ -656,67 +714,54 @@ def search_products():
             'compughana_products': 'GHS',
             'amazon_products': 'USD',
         }
+        
+        # Pre-process price filters for efficiency
+        min_price_float = None
+        max_price_float = None
+        if min_price:
+            try:
+                min_price_float = float(min_price)
+            except (ValueError, TypeError):
+                pass
+        if max_price:
+            try:
+                max_price_float = float(max_price)
+            except (ValueError, TypeError):
+                pass
+        
+        # Process all products in one pass
+        filtered_products = []
         for p in all_products:
-            print(f"DEBUG: Processing product: {p.get('name', 'Unknown')[:50]}...")
-            print(f"DEBUG: Original price: {p.get('price', 'None')}")
-            
-            # Ensure price field exists
+            # Ensure required fields exist
+            if 'name' not in p:
+                p['name'] = 'Unknown Product'
+            if 'store' not in p:
+                p['store'] = 'Unknown Store'
             if 'price' not in p:
                 p['price'] = None
                 
+            # Price conversion
             orig_price = parse_price(p['price'])
-            print(f"DEBUG: Parsed price: {orig_price}")
-            
             if orig_price is not None:
                 try:
                     converted = convert_price(orig_price, currency, store_currency.get(p['source_key'], 'GHS'))
-                    print(f"DEBUG: Converted price: {converted}")
                     p['converted_price'] = converted if converted is not None else orig_price
-                except Exception as e:
-                    print(f"DEBUG: Error in price conversion: {e}")
+                except Exception:
                     p['converted_price'] = orig_price
                 p['converted_currency'] = currency
             else:
                 p['converted_price'] = None
                 p['converted_currency'] = currency
-            print(f"DEBUG: Final converted_price: {p['converted_price']}")
-
-        print(f"DEBUG: Starting price filtering...")
-        # Apply advanced filters
-        filtered_products = []
-        for p in all_products:
-            # Ensure all required fields exist
-            if 'name' not in p:
-                p['name'] = 'Unknown Product'
-            if 'store' not in p:
-                p['store'] = 'Unknown Store'
-            if 'converted_price' not in p:
-                p['converted_price'] = None
-                
-            # Price filter
-            price = p.get('converted_price')
-            print(f"DEBUG: Checking product {p.get('name', 'Unknown')[:30]} with price: {price}")
             
-            if min_price and price is not None:
-                try:
-                    min_price_float = float(min_price)
-                    print(f"DEBUG: Comparing {price} < {min_price_float}")
-                    if price < min_price_float:
-                        print(f"DEBUG: Skipping - price too low")
-                        continue
-                except (ValueError, TypeError) as e:
-                    print(f"DEBUG: Error in min_price comparison: {e}")
-                    pass
-            if max_price and price is not None:
-                try:
-                    max_price_float = float(max_price)
-                    print(f"DEBUG: Comparing {price} > {max_price_float}")
-                    if price > max_price_float:
-                        print(f"DEBUG: Skipping - price too high")
-                        continue
-                except (ValueError, TypeError) as e:
-                    print(f"DEBUG: Error in max_price comparison: {e}")
-                    pass
+            # Apply filters in one pass
+            price = p.get('converted_price')
+            
+            # Price filter
+            if min_price_float is not None and price is not None and price < min_price_float:
+                continue
+            if max_price_float is not None and price is not None and price > max_price_float:
+                continue
+                
             # Store filter
             if store_filter and store_filter != '':
                 store_map = {
@@ -727,40 +772,34 @@ def search_products():
                 }
                 if p.get('store') != store_map.get(store_filter, store_filter):
                     continue
+                    
             # Category filter (if available)
             if category and category != '' and p.get('category'):
                 if p['category'].lower() != category.lower():
                     continue
+                    
             # In-stock filter (if available)
             if in_stock == 'on' and p.get('in_stock') is not None:
                 if not p['in_stock']:
                     continue
+                    
             filtered_products.append(p)
 
-        print(f"DEBUG: Filtered products count: {len(filtered_products)}")
         # Sorting
         if sort_by == 'price_low':
-            print(f"DEBUG: Sorting by price_low")
             filtered_products.sort(key=lambda x: x.get('converted_price', float('inf')) if x.get('converted_price') is not None else float('inf'))
         elif sort_by == 'price_high':
-            print(f"DEBUG: Sorting by price_high")
             filtered_products.sort(key=lambda x: x.get('converted_price', float('-inf')) if x.get('converted_price') is not None else float('-inf'), reverse=True)
         elif sort_by == 'name':
-            print(f"DEBUG: Sorting by name")
             filtered_products.sort(key=lambda x: x.get('name', '').lower())
         elif sort_by == 'store':
-            print(f"DEBUG: Sorting by store")
             filtered_products.sort(key=lambda x: x.get('store', ''))
-
-        print(f"DEBUG: Sorting completed")
 
         # Split filtered_products by store and limit to results_per_page
         jumia_products = [p for p in filtered_products if p.get('store') == 'Jumia'][:results_per_page]
         melcom_products = [p for p in filtered_products if p.get('store') == 'Melcom'][:results_per_page]
         compughana_products = [p for p in filtered_products if p.get('store') == 'CompuGhana'][:results_per_page]
         amazon_products = [p for p in filtered_products if p.get('store') == 'Amazon'][:results_per_page]
-
-        print(f"DEBUG: Split products - Jumia: {len(jumia_products)}, Melcom: {len(melcom_products)}, CompuGhana: {len(compughana_products)}, Amazon: {len(amazon_products)}")
 
         # Find the cheapest product in each store (use converted_price)
         def get_converted_price(x):
@@ -777,14 +816,12 @@ def search_products():
             try:
                 return min(products, key=get_converted_price)
             except (ValueError, TypeError) as e:
-                print(f"DEBUG: Error in get_cheapest: {e}")
+                print(f"Error in get_cheapest: {e}")
                 return None
-        print(f"DEBUG: Finding cheapest products...")
         cheapest_jumia = get_cheapest(jumia_products)
         cheapest_melcom = get_cheapest(melcom_products)
         cheapest_compughana = get_cheapest(compughana_products)
         cheapest_amazon = get_cheapest(amazon_products)
-        print(f"DEBUG: Cheapest products found")
 
         # Strip currency symbols from original price for local stores
         def strip_ghs(price):
@@ -802,7 +839,6 @@ def search_products():
         save_search_history(query, 'text', len(filtered_products))
 
         # Find the overall cheapest item (use converted_price)
-        print(f"DEBUG: Finding overall cheapest item from {len(filtered_products)} products")
         try:
             def safe_get_price(x):
                 price = x.get('converted_price')
@@ -814,10 +850,13 @@ def search_products():
                     return float('inf')
             
             cheapest_item = min(filtered_products, key=safe_get_price) if filtered_products else None
-            print(f"DEBUG: Overall cheapest item found: {cheapest_item.get('name', 'Unknown') if cheapest_item else 'None'}")
         except Exception as e:
-            print(f"DEBUG: Error finding overall cheapest item: {e}")
+            print(f"Error finding overall cheapest item: {e}")
             cheapest_item = None
+
+        # Temporarily disable performance logging
+        # total_time = time.time() - start_time
+        # print(f"SEARCH_COMPLETE: Query='{query}' | Total Time={total_time:.2f}s | Results={len(filtered_products)}")
 
         return render_template(
             'result.html',
@@ -828,26 +867,17 @@ def search_products():
             melcom_products=melcom_products,
             compughana_products=compughana_products,
             amazon_products=amazon_products,
-            all_products=filtered_products,
             cheapest_item=cheapest_item,
             cheapest_jumia=cheapest_jumia,
             cheapest_melcom=cheapest_melcom,
             cheapest_compughana=cheapest_compughana,
             cheapest_amazon=cheapest_amazon,
-            selected_currency=currency,
-            results_per_page=results_per_page,
-            min_price=min_price,
-            max_price=max_price,
-            store_filter=store_filter,
-            sort_by=sort_by,
-            category=category,
-            in_stock=in_stock,
-            total_results=len(filtered_products)
+            selected_currency=currency
         )
     except Exception as e:
         print(f"Error processing search: {str(e)}")
         flash('Error processing your search. Please try again.', 'error')
-        return render_template('error.html', error="Error processing your search. Please try again.")
+        return render_template('result.html', results=[], query=query)
 
 @app.route('/advanced-search', methods=['GET', 'POST'])
 def advanced_search():

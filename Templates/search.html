@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Pic2Price{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero">
+        <h1>Search Products</h1>
+        <p class="hero-subtitle">Find the best prices across multiple stores</p>
+    </div>
+
+    <div class="search-container">
+        <div class="search-form-container">
+            <form method="POST" class="search-form" id="search-form">
+                <div class="form-group">
+                    <label for="search-input">Search for products:</label>
+                    <input type="text" id="search-input" name="query" value="{{ query }}" placeholder="Enter product name, brand, or description..." required>
+                </div>
+                <div class="search-buttons">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+
+        {% if results %}
+        <div class="search-results">
+            <h2>Search Results</h2>
+            <div class="product-list">
+                {% for result in results %}
+                <div class="product-item">
+                    <h3>{{ result.name }}</h3>
+                    <p>{{ result.description }}</p>
+                    <p class="price">{{ result.price }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if query and not results %}
+        <div class="search-results">
+            <h2>No Results Found</h2>
+            <p>No products found for "{{ query }}". Try different keywords or check your spelling.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

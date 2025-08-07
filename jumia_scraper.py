@@ -34,7 +34,7 @@ def scrape_jumia(query, max_results=5):
 
     return []
 
-def _scraper_api_request(query, max_results, api_key, timeout=30):
+def _scraper_api_request(query, max_results, api_key, timeout=15):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
