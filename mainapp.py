@@ -21,6 +21,7 @@ from email.mime.multipart import MIMEMultipart
 import threading
 import schedule
 import hashlib
+import uuid
 
 try:
     from config import *
@@ -53,6 +54,12 @@ CACHE_TTL = 300  # 5 minutes cache TTL
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def get_user_id():
+    """Get or create a unique user ID for the current session."""
+    if 'user_id' not in session:
+        session['user_id'] = str(uuid.uuid4())
+    return session['user_id']
+
 # Ensure database is initialized
 def init_db():
     """Initialize the database with all required tables."""
@@ -63,6 +70,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS feedback (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 image_name TEXT,
                 predicted_label TEXT,
                 feedback TEXT,
@@ -74,6 +82,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS wishlist (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 product_name TEXT,
                 product_price TEXT,
                 product_link TEXT,
@@ -87,6 +96,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS price_alerts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 product_name TEXT,
                 target_price REAL,
                 current_price REAL,
@@ -102,6 +112,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS search_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 query TEXT,
                 search_type TEXT,
                 results_count INTEGER,
@@ -113,6 +124,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS price_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 product_name TEXT,
                 product_link TEXT,
                 store TEXT,
@@ -284,7 +296,7 @@ def check_price_for_alert(alert_id, alert_data, update_current_price=False):
         if update_current_price and current_price > 0:
             with sqlite3.connect(DATABASE) as conn:
                 cursor = conn.cursor()
-                cursor.execute('UPDATE price_alerts SET current_price = ? WHERE id = ?', (current_price, alert_id))
+                cursor.execute('UPDATE price_alerts SET current_price = ? WHERE id = ? AND user_id = ?', (current_price, alert_id, alert_data.get('user_id', get_user_id())))
                 conn.commit()
             print(f"DEBUG: Updated current price to {store_currency} {current_price:.2f} for alert {alert_id}")
         
@@ -296,7 +308,7 @@ def check_price_for_alert(alert_id, alert_data, update_current_price=False):
                 # Deactivate alert
                 with sqlite3.connect(DATABASE) as conn:
                     cursor = conn.cursor()
-                    cursor.execute('UPDATE price_alerts SET is_active = 0 WHERE id = ?', (alert_id,))
+                    cursor.execute('UPDATE price_alerts SET is_active = 0 WHERE id = ? AND user_id = ?', (alert_id, alert_data.get('user_id', get_user_id())))
                     conn.commit()
                 print(f"Alert {alert_id} deactivated - target price reached!")
             return current_price
@@ -473,9 +485,9 @@ def save_search_history(query, search_type, results_count):
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO search_history (query, search_type, results_count)
-                VALUES (?, ?, ?)
-            ''', (query, search_type, results_count))
+                INSERT INTO search_history (user_id, query, search_type, results_count)
+                VALUES (?, ?, ?, ?)
+            ''', (get_user_id(), query, search_type, results_count))
             conn.commit()
     except Exception as e:
         print(f"Error saving search history: {e}")
@@ -489,9 +501,9 @@ def save_price_history(products, currency):
                 for product in product_list:
                     if product.get('converted_price'):
                         cursor.execute('''
-                            INSERT INTO price_history (product_name, product_link, store, price, currency)
-                            VALUES (?, ?, ?, ?, ?)
-                        ''', (product['name'], product['link'], product['store'], 
+                            INSERT INTO price_history (user_id, product_name, product_link, store, price, currency)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (get_user_id(), product['name'], product['link'], product['store'], 
                               product['converted_price'], currency))
             conn.commit()
     except Exception as e:
@@ -892,14 +904,14 @@ def wishlist():
     try:
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM wishlist ORDER BY added_at DESC')
+            cursor.execute('SELECT * FROM wishlist WHERE user_id = ? ORDER BY added_at DESC', (get_user_id(),))
             wishlist_items = cursor.fetchall()
             
             # Calculate unique stores count
             unique_stores = set()
             for item in wishlist_items:
-                if item[5]:  # item[5] is the store field
-                    unique_stores.add(item[5])
+                if item[6]:  # item[6] is the store field (adjusted for user_id column)
+                    unique_stores.add(item[6])
             unique_stores_count = len(unique_stores)
         
         return render_template('wishlist.html', wishlist_items=wishlist_items, unique_stores_count=unique_stores_count)
@@ -915,9 +927,9 @@ def add_to_wishlist():
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO wishlist (product_name, product_price, product_link, product_image, store)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (data['name'], data['price'], data['link'], data.get('image', ''), data['store']))
+                INSERT INTO wishlist (user_id, product_name, product_price, product_link, product_image, store)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (get_user_id(), data['name'], data['price'], data['link'], data.get('image', ''), data['store']))
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Added to wishlist'})
@@ -930,7 +942,7 @@ def remove_from_wishlist(item_id):
     try:
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM wishlist WHERE id = ?', (item_id,))
+            cursor.execute('DELETE FROM wishlist WHERE id = ? AND user_id = ?', (item_id, get_user_id()))
             conn.commit()
         
         flash('Item removed from wishlist', 'success')
@@ -963,8 +975,8 @@ def check_single_price_alert(alert_id):
             cursor.execute('''
                 SELECT id, product_name, target_price, current_price, product_link, store, email, created_at
                 FROM price_alerts 
-                WHERE id = ? AND is_active = 1
-            ''', (alert_id,))
+                WHERE id = ? AND is_active = 1 AND user_id = ?
+            ''', (alert_id, get_user_id()))
             alert_data = cursor.fetchone()
         
         if not alert_data:
@@ -1006,8 +1018,9 @@ def price_alerts():
             cursor.execute('''
                 SELECT id, product_name, target_price, current_price, product_link, store, email, is_active, created_at
                 FROM price_alerts 
+                WHERE user_id = ?
                 ORDER BY created_at DESC
-            ''')
+            ''', (get_user_id(),))
             alerts = cursor.fetchall()
         
         return render_template('price_alerts.html', alerts=alerts)
@@ -1023,9 +1036,9 @@ def create_price_alert():
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO price_alerts (product_name, target_price, current_price, product_link, store, email)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (data['name'], data['target_price'], data['current_price'], 
+                INSERT INTO price_alerts (user_id, product_name, target_price, current_price, product_link, store, email)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (get_user_id(), data['name'], data['target_price'], data['current_price'], 
                   data['link'], data['store'], data.get('email', '')))
             conn.commit()
         
@@ -1039,7 +1052,7 @@ def delete_price_alert(alert_id):
     try:
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM price_alerts WHERE id = ?', (alert_id,))
+            cursor.execute('DELETE FROM price_alerts WHERE id = ? AND user_id = ?', (alert_id, get_user_id()))
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Price alert deleted'})
@@ -1052,7 +1065,7 @@ def deactivate_price_alert(alert_id):
     try:
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
-            cursor.execute('UPDATE price_alerts SET is_active = 0 WHERE id = ?', (alert_id,))
+            cursor.execute('UPDATE price_alerts SET is_active = 0 WHERE id = ? AND user_id = ?', (alert_id, get_user_id()))
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Price alert deactivated'})
@@ -1065,7 +1078,7 @@ def activate_price_alert(alert_id):
     try:
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
-            cursor.execute('UPDATE price_alerts SET is_active = 1 WHERE id = ?', (alert_id,))
+            cursor.execute('UPDATE price_alerts SET is_active = 1 WHERE id = ? AND user_id = ?', (alert_id, get_user_id()))
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Price alert activated'})
@@ -1084,20 +1097,22 @@ def analytics():
                 SELECT search_type, COUNT(*) as count, 
                        DATE(created_at) as date
                 FROM search_history 
+                WHERE user_id = ?
                 GROUP BY search_type, DATE(created_at)
                 ORDER BY date DESC
                 LIMIT 30
-            ''')
+            ''', (get_user_id(),))
             search_stats = cursor.fetchall()
             
             # Get popular searches
             cursor.execute('''
                 SELECT query, COUNT(*) as count
                 FROM search_history 
+                WHERE user_id = ?
                 GROUP BY query 
                 ORDER BY count DESC 
                 LIMIT 10
-            ''')
+            ''', (get_user_id(),))
             popular_searches = cursor.fetchall()
             
             # Get price history trends
@@ -1106,20 +1121,21 @@ def analytics():
                        MIN(price) as min_price, MAX(price) as max_price,
                        COUNT(*) as price_count
                 FROM price_history 
+                WHERE user_id = ?
                 GROUP BY product_name, store
                 ORDER BY price_count DESC
                 LIMIT 20
-            ''')
+            ''', (get_user_id(),))
             price_trends = cursor.fetchall()
             
             # Get total statistics
-            cursor.execute('SELECT COUNT(*) FROM search_history')
+            cursor.execute('SELECT COUNT(*) FROM search_history WHERE user_id = ?', (get_user_id(),))
             total_searches = cursor.fetchone()[0]
             
-            cursor.execute('SELECT COUNT(*) FROM wishlist')
+            cursor.execute('SELECT COUNT(*) FROM wishlist WHERE user_id = ?', (get_user_id(),))
             total_wishlist = cursor.fetchone()[0]
             
-            cursor.execute('SELECT COUNT(*) FROM price_alerts WHERE is_active = 1')
+            cursor.execute('SELECT COUNT(*) FROM price_alerts WHERE is_active = 1 AND user_id = ?', (get_user_id(),))
             active_alerts = cursor.fetchone()[0]
         
         return render_template('analytics.html', 
@@ -1179,9 +1195,9 @@ def submit_feedback():
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO feedback (image_name, predicted_label, feedback) 
-                VALUES (?, ?, ?)
-            ''', (image_name, predicted_label, feedback))
+                INSERT INTO feedback (user_id, image_name, predicted_label, feedback) 
+                VALUES (?, ?, ?, ?)
+            ''', (get_user_id(), image_name, predicted_label, feedback))
             conn.commit()
         flash('Thank you for your feedback!', 'success')
     else:
@@ -1196,11 +1212,11 @@ def admin():
         with sqlite3.connect(DATABASE) as conn:
             cursor = conn.cursor()
             
-            # Get feedback data
-            cursor.execute('SELECT image_name, predicted_label, feedback, created_at FROM feedback ORDER BY created_at DESC')
+            # Get feedback data (all users)
+            cursor.execute('SELECT user_id, image_name, predicted_label, feedback, created_at FROM feedback ORDER BY created_at DESC')
             feedback_data = cursor.fetchall()
             
-            # Get system statistics
+            # Get system statistics (all users)
             cursor.execute('SELECT COUNT(*) FROM search_history')
             total_searches = cursor.fetchone()[0]
             
