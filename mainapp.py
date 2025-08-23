@@ -673,7 +673,7 @@ def search_products():
     in_stock = request.form.get('in_stock')
     results_per_page = int(request.form.get('results_per_page', 20))
     page = int(request.form.get('page', 1))
-
+    
     if not query:
         flash('Please enter a search query', 'error')
         return redirect(url_for('advanced_search'))
@@ -705,7 +705,7 @@ def search_products():
             for p in products:
                 p['source_key'] = key
                 all_products.append(p)
-
+        
         # Helper to parse price strings
         def parse_price(price_str):
             if not price_str or price_str == 'Price not available':
@@ -753,18 +753,18 @@ def search_products():
                 p['price'] = None
                 
             # Price conversion
-            orig_price = parse_price(p['price'])
-            if orig_price is not None:
+                orig_price = parse_price(p['price'])
+                if orig_price is not None:
                 try:
                     converted = convert_price(orig_price, currency, store_currency.get(p['source_key'], 'GHS'))
                     p['converted_price'] = converted if converted is not None else orig_price
                 except Exception:
                     p['converted_price'] = orig_price
-                p['converted_currency'] = currency
-            else:
-                p['converted_price'] = None
-                p['converted_currency'] = currency
-            
+                    p['converted_currency'] = currency
+                else:
+                    p['converted_price'] = None
+                    p['converted_currency'] = currency
+
             # Apply filters in one pass
             price = p.get('converted_price')
             
@@ -824,24 +824,24 @@ def search_products():
                 return float('inf')
         def get_cheapest(products):
             if not products:
-                return None
-            try:
+                    return None
+                try:
                 return min(products, key=get_converted_price)
             except (ValueError, TypeError) as e:
                 print(f"Error in get_cheapest: {e}")
-                return None
+                    return None
         cheapest_jumia = get_cheapest(jumia_products)
         cheapest_melcom = get_cheapest(melcom_products)
         cheapest_compughana = get_cheapest(compughana_products)
         cheapest_amazon = get_cheapest(amazon_products)
 
-        # Strip currency symbols from original price for local stores
-        def strip_ghs(price):
+            # Strip currency symbols from original price for local stores
+            def strip_ghs(price):
             if price is None:
                 return ''
-            return re.sub(r'^(GHS|GH₵|₵|GHC|Ghc|ghc|gh₵|Ghs|Ghs|GHS|GHS)\s*', '', str(price)).strip()
+                return re.sub(r'^(GHS|GH₵|₵|GHC|Ghc|ghc|gh₵|Ghs|Ghs|GHS|GHS)\s*', '', str(price)).strip()
         for p in jumia_products + melcom_products + compughana_products:
-            p['original_price_clean'] = strip_ghs(p['price'])
+                    p['original_price_clean'] = strip_ghs(p['price'])
             p['original_price_with_symbol'] = p['price'] if p.get('price') else ''  # Keep original with symbol
         for p in amazon_products:
             p['original_price_clean'] = p.get('price', '')
@@ -870,8 +870,8 @@ def search_products():
         # total_time = time.time() - start_time
         # print(f"SEARCH_COMPLETE: Query='{query}' | Total Time={total_time:.2f}s | Results={len(filtered_products)}")
 
-        return render_template(
-            'result.html',
+            return render_template(
+                'result.html',
             filename=None,
             label=query,
             confidence=100,
@@ -879,16 +879,16 @@ def search_products():
             melcom_products=melcom_products,
             compughana_products=compughana_products,
             amazon_products=amazon_products,
-            cheapest_item=cheapest_item,
-            cheapest_jumia=cheapest_jumia,
-            cheapest_melcom=cheapest_melcom,
-            cheapest_compughana=cheapest_compughana,
-            cheapest_amazon=cheapest_amazon,
-            selected_currency=currency
-        )
-    except Exception as e:
-        print(f"Error processing search: {str(e)}")
-        flash('Error processing your search. Please try again.', 'error')
+                cheapest_item=cheapest_item,
+                cheapest_jumia=cheapest_jumia,
+                cheapest_melcom=cheapest_melcom,
+                cheapest_compughana=cheapest_compughana,
+                cheapest_amazon=cheapest_amazon,
+                selected_currency=currency
+            )
+        except Exception as e:
+            print(f"Error processing search: {str(e)}")
+            flash('Error processing your search. Please try again.', 'error')
         return render_template('result.html', results=[], query=query)
 
 @app.route('/advanced-search', methods=['GET', 'POST'])
@@ -906,7 +906,7 @@ def wishlist():
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM wishlist WHERE user_id = ? ORDER BY added_at DESC', (get_user_id(),))
             wishlist_items = cursor.fetchall()
-            
+        
             # Calculate unique stores count
             unique_stores = set()
             for item in wishlist_items:

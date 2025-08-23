@@ -4,9 +4,217 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Pic2Price - AI Price Comparison{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3.3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        /* Mobile Sidebar Styles */
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 10;
+            font-size: 24px;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: var(--shadow-color);
+            border-radius: 8px;
+        }
+
+        .mobile-menu-btn.active {
+            transform: rotate(90deg);
+        }
+
+        /* Mobile Sidebar */
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: #000;
+            z-index: 10000;
+            transition: left 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-sidebar.open {
+            left: 0;
+        }
+
+        /* Mobile Sidebar Header */
+        .mobile-sidebar-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .mobile-sidebar-close {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-sidebar-close:hover {
+            background: #333;
+        }
+
+        /* Mobile Sidebar Content */
+        .mobile-sidebar-content {
+            padding: 20px 0;
+        }
+
+        .mobile-sidebar-menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .mobile-sidebar-item {
+            border-bottom: 1px solid #333;
+        }
+
+        .mobile-sidebar-item:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 18px 20px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .mobile-sidebar-link:hover {
+            background: #333;
+        }
+
+        .mobile-sidebar-link.active {
+            background: #333;
+        }
+
+        .mobile-sidebar-link i {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .mobile-sidebar-link span {
+            color: #fff;
+        }
+
+        /* Mobile Sidebar Overlay */
+        .mobile-sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .mobile-sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex !important;
+                order: 1;
+                flex-shrink: 0;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .main-nav {
+                display: none !important;
+            }
+            
+            .header-content {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 0 5px !important;
+                gap: 0 !important;
+                width: 100% !important;
+                min-height: 60px;
+            }
+            
+            .brand {
+                flex: 1 !important;
+                text-align: center !important;
+                order: 2;
+                margin: 0 10px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+            
+            .brand-name {
+                font-size: 1.5rem !important;
+                font-weight: bold !important;
+                margin: 0 !important;
+            }
+            
+            .brand-tagline {
+                display: none !important;
+            }
+            
+            .header-right {
+                display: flex !important;
+                gap: 10px !important;
+                order: 3;
+                flex-shrink: 0 !important;
+                align-items: center !important;
+            }
+            
+            .theme-toggle {
+                display: flex !important;
+                align-items: center !important;
+            }
+        }
+
+        /* Prevent body scroll when sidebar is open */
+        body.sidebar-open {
+            overflow: hidden;
+        }
+    </style>
+
 </head>
 <body>
     <header class="main-header flat-header">
@@ -18,17 +226,10 @@
             
             <!-- Mobile hamburger menu button -->
             <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle mobile menu">
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
+                ☰
             </button>
             
             <nav class="main-nav flat-nav" id="main-nav">
-                <!-- Mobile menu close button -->
-                <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Close mobile menu">
-                    <i class="fas fa-times"></i>
-                </button>
-                
                 <ul class="nav-list flat-nav-list">
                     <li class="nav-item flat-nav-item">
                         <a href="{{ url_for('home') }}" class="nav-link flat-nav-link {% if request.endpoint == 'home' %}active{% endif %}">
@@ -74,6 +275,64 @@
                     </li>
                 </ul>
             </nav>
+            
+            <!-- Mobile Sidebar -->
+            <div class="mobile-sidebar" id="mobile-sidebar">
+                <div class="mobile-sidebar-header">
+                    <button class="mobile-sidebar-close" id="mobile-sidebar-close" aria-label="Close mobile menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mobile-sidebar-content">
+                    <ul class="mobile-sidebar-menu">
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('home') }}" class="mobile-sidebar-link {% if request.endpoint == 'home' %}active{% endif %}">
+                                <i class="fas fa-home"></i>
+                                <span>Home</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('upload_file') }}" class="mobile-sidebar-link {% if request.endpoint == 'upload_file' %}active{% endif %}">
+                                <i class="fas fa-camera"></i>
+                                <span>Basic Search</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('advanced_search') }}" class="mobile-sidebar-link {% if request.endpoint == 'advanced_search' %}active{% endif %}">
+                                <i class="fas fa-sliders-h"></i>
+                                <span>Advanced Search</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('wishlist') }}" class="mobile-sidebar-link {% if request.endpoint == 'wishlist' %}active{% endif %}">
+                                <i class="fas fa-heart"></i>
+                                <span>Wishlist</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('price_alerts') }}" class="mobile-sidebar-link {% if request.endpoint == 'price_alerts' %}active{% endif %}">
+                                <i class="fas fa-bell"></i>
+                                <span>Price Alerts</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('about') }}" class="mobile-sidebar-link {% if request.endpoint == 'about' %}active{% endif %}">
+                                <i class="fas fa-info-circle"></i>
+                                <span>About</span>
+                            </a>
+                        </li>
+                        <li class="mobile-sidebar-item">
+                            <a href="{{ url_for('analytics') }}" class="mobile-sidebar-link {% if request.endpoint == 'analytics' %}active{% endif %}">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Analytics</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Mobile Sidebar Overlay -->
+            <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay"></div>
             <div class="header-right">
                 <div class="theme-toggle flat-theme-toggle">
                     <button id="theme-toggle-btn" aria-label="Toggle dark mode">
@@ -113,37 +372,68 @@
     {% endwith %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Mobile menu toggle
-            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            const mainNav = document.getElementById('main-nav');
             
-            if (mobileMenuBtn && mainNav) {
+            // Mobile Sidebar Functionality
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
+            const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+            
+            function openMobileSidebar() {
+                mobileSidebar.classList.add('open');
+                mobileSidebarOverlay.classList.add('show');
+                mobileMenuBtn.classList.add('active');
+                document.body.classList.add('sidebar-open');
+            }
+            
+            function closeMobileSidebar() {
+                mobileSidebar.classList.remove('open');
+                mobileSidebarOverlay.classList.remove('show');
+                mobileMenuBtn.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+            }
+            
+            // Open sidebar when hamburger button is clicked
+            if (mobileMenuBtn) {
                 mobileMenuBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    mainNav.classList.toggle('mobile-open');
-                    mobileMenuBtn.classList.toggle('active');
-                });
-                
-                // Mobile menu close button
-                const mobileMenuClose = document.getElementById('mobile-menu-close');
-                if (mobileMenuClose) {
-                    mobileMenuClose.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        mainNav.classList.remove('mobile-open');
-                        mobileMenuBtn.classList.remove('active');
-                    });
-                }
-                
-                // Close mobile menu when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!mainNav.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                        mainNav.classList.remove('mobile-open');
-                        mobileMenuBtn.classList.remove('active');
-                    }
+                    openMobileSidebar();
                 });
             }
+            
+            // Close sidebar when close button is clicked
+            if (mobileSidebarClose) {
+                mobileSidebarClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeMobileSidebar();
+                });
+            }
+            
+            // Close sidebar when overlay is clicked
+            if (mobileSidebarOverlay) {
+                mobileSidebarOverlay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeMobileSidebar();
+                });
+            }
+            
+            // Close sidebar when clicking on a menu item
+            const mobileSidebarLinks = document.querySelectorAll('.mobile-sidebar-link');
+            mobileSidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    closeMobileSidebar();
+                });
+            });
+            
+            // Close sidebar when pressing Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileSidebar.classList.contains('open')) {
+                    closeMobileSidebar();
+                }
+            });
             
             // Theme toggle
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
