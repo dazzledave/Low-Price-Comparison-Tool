@@ -1,22 +1,22 @@
-# Pic2Price - Ghanaian Price Comparison Tool 🛒
+# Pic2Price - Ghanaian Price Comparison Tool
 
 A comprehensive web application that helps you find the best prices for products across major Ghanaian e-commerce platforms and international stores. Features AI-powered image recognition, advanced search capabilities, price alerts, and wishlist management.
 
-## ✨ Features
+## Features
 
-### 🔍 **Multi-Platform Search**
+### **Multi-Platform Search**
 - **Local Stores**: Jumia, Melcom, CompuGhana
 - **International**: Amazon
 - **Real-time Scraping**: Live price comparison across all platforms
 - **Currency Support**: GHS (Ghana Cedi) and USD (US Dollar)
 
-### 🖼️ **AI-Powered Image Search**
+###  **AI-Powered Image Search**
 - **CLIP Model**: Advanced image recognition using OpenAI's CLIP
 - **InceptionV3**: Traditional image classification
 - **Smart Matching**: Automatically identifies products from uploaded images
 - **Confidence Scoring**: Shows recognition accuracy
 
-### 🔎 **Advanced Search**
+### **Advanced Search**
 - **Text Search**: Search by product name with advanced filters
 - **Price Range**: Filter by minimum and maximum price
 - **Store Filter**: Search specific stores only
@@ -25,7 +25,7 @@ A comprehensive web application that helps you find the best prices for products
 - **In-Stock Filter**: Show only available products
 - **Results Per Store**: Customize number of results (5-20 per store)
 
-### 💰 **Price Alerts System**
+### **Price Alerts System**
 - **One-Click Alerts**: Create alerts directly from search results
 - **Email Notifications**: Get notified when prices drop
 - **Multi-Currency**: Support for GHS and USD alerts
@@ -33,26 +33,26 @@ A comprehensive web application that helps you find the best prices for products
 - **Background Monitoring**: Automated price checking every 6 hours
 - **Individual Checking**: Check specific alert prices manually
 
-### ❤️ **Wishlist Management**
+### **Wishlist Management**
 - **Save Products**: Add products to wishlist from search results
 - **Organized View**: Browse saved products with store information
 - **Export Feature**: Download wishlist as CSV
 - **Statistics**: Track total items and stores
 
-### 📊 **Analytics Dashboard**
+### **Analytics Dashboard**
 - **Search Statistics**: Track search patterns and popular queries
 - **Price History**: Monitor price trends over time
 - **Usage Analytics**: View system usage statistics
 - **Export Data**: Download analytics reports
 
-### 🎨 **User Experience**
+### **User Experience**
 - **Dark/Light Mode**: Comfortable viewing experience
 - **Responsive Design**: Works on all devices
 - **Progressive Loading**: Real-time search progress indicators
 - **Error Handling**: Robust error management
 - **Caching System**: Improved performance with intelligent caching
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -127,30 +127,30 @@ python mainapp.py
 http://localhost:5000
 ```
 
-## 📖 How to Use
+## How to Use
 
-### 🔍 **Basic Search**
+### **Basic Search**
 1. **Text Search**: Enter product name in the search bar
 2. **Advanced Search**: Use the Advanced Search page for detailed filtering
 3. **Image Search**: Upload a product image for AI-powered recognition
 
-### 💰 **Price Alerts**
+### **Price Alerts**
 1. **Create Alert**: Click "Set Alert" on any product card
 2. **Set Target Price**: Enter your desired price
 3. **Email Setup**: Configure Gmail for email notifications (optional)
 4. **Manage Alerts**: View and manage alerts from the Price Alerts page
 
-### ❤️ **Wishlist**
+### **Wishlist**
 1. **Add to Wishlist**: Click "Add to Wishlist" on product cards
 2. **View Wishlist**: Access from the navigation menu
 3. **Export**: Download your wishlist as CSV
 
-### 📊 **Analytics**
+### **Analytics**
 - **View Dashboard**: Access analytics from the navigation menu
 - **Track Usage**: Monitor search patterns and price trends
 - **Export Reports**: Download analytics data
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -196,7 +196,7 @@ MAX_PRICE_CHECKS_PER_RUN = 10
 DELAY_BETWEEN_CHECKS = 2
 ```
 
-## 🛠️ Technical Architecture
+## Technical Architecture
 
 ### **Backend Technologies**
 - **Flask**: Web framework
@@ -222,41 +222,6 @@ DELAY_BETWEEN_CHECKS = 2
 - **Font Awesome**: Icons
 - **CSS Variables**: Theme support (dark/light mode)
 
-## 📁 Project Structure
-
-```
-Low Price Comparison Tool/
-├── mainapp.py              # Main Flask application
-├── requirements.txt        # Python dependencies
-├── config.py              # Configuration settings
-├── README.md              # This file
-├── .gitignore             # Git ignore patterns
-├── Templates/             # HTML templates
-│   ├── base.html          # Base template
-│   ├── index.html         # Home page
-│   ├── upload.html        # Image upload page
-│   ├── advanced_search.html # Advanced search
-│   ├── result.html        # Search results
-│   ├── price_alerts.html  # Price alerts management
-│   ├── wishlist.html      # Wishlist page
-│   ├── analytics.html     # Analytics dashboard
-│   └── about.html         # About page
-├── Static/                # Static assets
-│   ├── style.css          # Main stylesheet
-│   ├── uploads/           # Uploaded images
-│   └── p2p_logo.png      # Logo
-├── scrapers/              # Web scrapers
-│   ├── jumia_scraper.py  # Jumia scraper
-│   ├── melcom_scraper.py # Melcom scraper
-│   ├── compughana_scraper.py # CompuGhana scraper
-│   └── amazon_scraper.py # Amazon scraper
-├── utils/                 # Utility modules
-│   ├── image_recognition.py # AI image recognition
-│   ├── currency_utils.py  # Currency conversion
-│   └── cache_manager.py   # Caching system
-├── models/                # AI model files
-├── search_cache/          # Search result cache
-└── uploads/               # User uploaded images
 ```
 
 ## 🔧 Development
@@ -280,7 +245,7 @@ The application uses SQLite with the following tables:
 3. Add to `mainapp.py` import and scraping functions
 4. Update templates to include new store
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -288,23 +253,12 @@ The application uses SQLite with the following tables:
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **OpenAI CLIP** for image recognition capabilities
 - **BeautifulSoup** for web scraping functionality
 - **Flask** for the web framework
 - **Font Awesome** for icons
-
-## 📞 Support
-
-For issues, questions, or contributions:
-- Create an issue on GitHub
-- Check the documentation
-- Review the code comments
 
 ---
 
