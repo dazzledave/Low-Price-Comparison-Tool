@@ -88,6 +88,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const searchTabs = document.querySelectorAll('.search-tab');
 
+    // Check URL parameters for tab selection
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab');
+    
+    // If text-search tab is requested, switch to it
+    if (activeTab === 'text-search') {
+        // Remove active class from all buttons and tabs
+        tabBtns.forEach(b => b.classList.remove('active'));
+        searchTabs.forEach(t => t.classList.remove('active'));
+        
+        // Add active class to text search button and tab
+        document.querySelector('[data-tab="text-search"]').classList.add('active');
+        document.getElementById('text-search').classList.add('active');
+    }
+
     // Tab switching functionality
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {

@@ -25,16 +25,20 @@ def scrape_jumia(query, max_results=5):
     # Use the key from the .env file
     # SCRAPERAPI_KEY is already set above
     try:
+        print(f"[JUMIA SCRAPER] Starting search for: {query}")
         results = _scraper_api_request(query, max_results, SCRAPERAPI_KEY)
         if results:
+            print(f"[JUMIA SCRAPER] Found {len(results)} products")
             cache.cache_results(query, 'jumia', results)
             return results
+        else:
+            print("[JUMIA SCRAPER] No results found")
     except Exception as e:
-        print(f"ScraperAPI request failed: {e}")
+        print(f"[JUMIA SCRAPER] ScraperAPI request failed: {e}")
 
     return []
 
-def _scraper_api_request(query, max_results, api_key, timeout=15):
+def _scraper_api_request(query, max_results, api_key, timeout=60):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -45,24 +49,39 @@ def _scraper_api_request(query, max_results, api_key, timeout=15):
     target_url = f"https://www.jumia.com.gh/catalog/?q={query.replace(' ', '+')}"
     
     # Add ScraperAPI parameters for better success rate
+    # Jumia requires premium proxies
     params = {
         'api_key': api_key,
-        'url': target_url
+        'url': target_url,
+        'premium': 'true'
     }
     
     search_url = 'http://api.scraperapi.com/'
     
     try:
+        print(f"[JUMIA SCRAPER] Making request to ScraperAPI...")
         response = requests.get(search_url, params=params, headers=headers, timeout=timeout)
-        response.raise_for_status()  # Raise exception for bad status codes
+        print(f"[JUMIA SCRAPER] Response status: {response.status_code}")
+        print(f"[JUMIA SCRAPER] Response size: {len(response.text)} characters")
         
-        return _parse_results(response.text, max_results)
+        if response.status_code == 200:
+            print(f"[JUMIA SCRAPER] Request successful, parsing results...")
+            return _parse_results(response.text, max_results)
+        else:
+            print(f"[JUMIA SCRAPER] HTTP {response.status_code}: {response.text[:200]}...")
+            return []
+            
+    except requests.exceptions.Timeout:
+        print(f"[JUMIA SCRAPER] Request timed out after {timeout} seconds")
+        return []
     except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
+        print(f"[JUMIA SCRAPER] Request failed: {e}")
         if hasattr(e, 'response') and e.response is not None:
-            print(f"Response status code: {e.response.status_code}")
-            print(f"Response headers: {e.response.headers}")
-        raise
+            print(f"[JUMIA SCRAPER] Response status code: {e.response.status_code}")
+        return []
+    except Exception as e:
+        print(f"[JUMIA SCRAPER] Unexpected error: {e}")
+        return []
 
 def _parse_results(html_content, max_results):
     soup = BeautifulSoup(html_content, 'html.parser')
