@@ -110,14 +110,75 @@ function removeFromWishlist(itemId) {
 
 function clearWishlist() {
     if (confirm('Are you sure you want to clear your entire wishlist? This action cannot be undone.')) {
-        // Implementation for clearing all items
-        alert('Feature coming soon!');
+        fetch('/clear-wishlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove all wishlist items from the page
+                const wishlistGrid = document.querySelector('.wishlist-grid');
+                if (wishlistGrid) {
+                    wishlistGrid.innerHTML = '';
+                }
+                
+                // Update stats
+                updateWishlistStats();
+                
+                // Show success message
+                alert('Wishlist cleared successfully!');
+                
+                // Reload page to show empty state
+                location.reload();
+            } else {
+                alert('Error clearing wishlist: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error clearing wishlist');
+        });
     }
 }
 
 function exportWishlist() {
-    // Implementation for exporting wishlist
-    alert('Export feature coming soon!');
+    // Fetch CSV and download
+    fetch('/export-wishlist')
+        .then(response => {
+            console.log('Export response status:', response.status);
+            console.log('Export response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return response.text();
+        })
+        .then(csvContent => {
+            console.log('CSV content received:', csvContent.substring(0, 200) + '...');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `wishlist_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            alert('Error exporting wishlist: ' + error.message);
+        });
 }
 
 function updateWishlistStats() {

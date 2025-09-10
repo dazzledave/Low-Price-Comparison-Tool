@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, make_response
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
@@ -14,7 +14,7 @@ from currency_utils import convert_price
 from datetime import datetime, timedelta
 import json
 import csv
-from io import StringIO
+import io
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -23,25 +23,14 @@ import schedule
 import hashlib
 import uuid
 
-try:
-    from config import *
-except ImportError:
-    # Default email configuration if config.py doesn't exist
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USER = 'your-email@gmail.com'
-    EMAIL_PASSWORD = 'your-app-password'
-    PRICE_CHECK_INTERVAL_HOURS = 6
-    MAX_PRICE_CHECKS_PER_RUN = 10
-    DELAY_BETWEEN_CHECKS = 2
-    SENDER_NAME = 'Pic2Price Price Alerts'
-    EMAIL_SUBJECT_PREFIX = 'Price Alert:'
-
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
 
 # Configurations
 UPLOAD_FOLDER = 'static/uploads'
+PRICE_CHECK_INTERVAL_HOURS = 6  # Check price alerts every 6 hours
+MAX_PRICE_CHECKS_PER_RUN = 10  # Maximum price checks per monitoring run
+DELAY_BETWEEN_CHECKS = 2  # Delay in seconds between price checks
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 DATABASE = 'feedback.db'
 SCRAPING_TIMEOUT = 15  # Reduced from 30 to 15 seconds for faster response
@@ -870,7 +859,7 @@ def search_products():
         # Temporarily disable performance logging
         # total_time = time.time() - start_time
         # print(f"SEARCH_COMPLETE: Query='{query}' | Total Time={total_time:.2f}s | Results={len(filtered_products)}")
-
+        
         return render_template(
             'result.html',
             filename=None,
@@ -946,11 +935,98 @@ def remove_from_wishlist(item_id):
             cursor.execute('DELETE FROM wishlist WHERE id = ? AND user_id = ?', (item_id, get_user_id()))
             conn.commit()
         
-        flash('Item removed from wishlist', 'success')
-        return redirect(url_for('wishlist'))
+        return jsonify({'success': True, 'message': 'Item removed from wishlist'})
     except Exception as e:
-        flash('Error removing item from wishlist', 'error')
-        return redirect(url_for('wishlist'))
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/clear-wishlist', methods=['POST'])
+def clear_wishlist():
+    """Clear all items from wishlist."""
+    try:
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM wishlist WHERE user_id = ?', (get_user_id(),))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Wishlist cleared successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/export-wishlist')
+def export_wishlist():
+    """Export wishlist as CSV."""
+    try:
+        print("DEBUG: Starting CSV export...")
+        
+        with sqlite3.connect(DATABASE) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM wishlist WHERE user_id = ? ORDER BY added_at DESC', (get_user_id(),))
+            wishlist_items = cursor.fetchall()
+            print(f"DEBUG: Found {len(wishlist_items)} wishlist items")
+            
+            # Debug: Print the first item to see the actual structure
+            if wishlist_items:
+                print(f"DEBUG: First item structure: {wishlist_items[0]}")
+                print(f"DEBUG: First item length: {len(wishlist_items[0])}")
+                for i, field in enumerate(wishlist_items[0]):
+                    print(f"DEBUG: Index {i}: {field}")
+                
+                # Also check the database schema
+                cursor.execute("PRAGMA table_info(wishlist)")
+                schema = cursor.fetchall()
+                print("DEBUG: Database schema:")
+                for col in schema:
+                    print(f"  Column {col[0]}: {col[1]} ({col[2]})")
+        
+        # Create CSV content using csv module
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Product Name', 'Price', 'Store', 'Link'])
+        
+        # Write data rows
+        for item in wishlist_items:
+            try:
+                # Actual data structure: (id, product_name, product_price, product_link, product_image, store, added_at, user_id)
+                # Correct indices: 0=id, 1=product_name, 2=product_price, 3=product_link, 4=product_image, 5=store, 6=added_at, 7=user_id
+                product_name = item[1] if item[1] else 'Unknown'  # product_name
+                price = item[2] if item[2] else 'N/A'            # product_price  
+                store = item[5] if item[5] else 'Unknown'        # store
+                link = item[3] if item[3] else ''                # product_link
+                
+                print(f"DEBUG: Processing item - Name: {product_name}, Price: {price}, Store: {store}, Link: {link[:50]}...")
+                writer.writerow([product_name, price, store, link])
+            except Exception as row_error:
+                print(f"DEBUG: Error processing row {item}: {row_error}")
+                continue
+        
+        # Get CSV content
+        csv_content = output.getvalue()
+        output.close()
+        
+        print(f"DEBUG: Generated CSV content length: {len(csv_content)}")
+        
+        # Create response
+        response = make_response(csv_content)
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = f'attachment; filename=wishlist_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        response.headers['Cache-Control'] = 'no-cache'
+        
+        print("DEBUG: CSV export completed successfully")
+        return response
+        
+    except Exception as e:
+        print(f"CSV Export Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return a simple error CSV instead of redirecting
+        error_csv = "Product Name,Price,Link\nError,Error exporting wishlist,Error"
+        response = make_response(error_csv)
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=wishlist_error.csv'
+        return response
 
 @app.route('/check-price-alerts', methods=['POST'])
 def manual_check_price_alerts():
