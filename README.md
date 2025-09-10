@@ -1,6 +1,10 @@
 # Pic2Price - Ghanaian Price Comparison Tool
 
 A comprehensive web application that helps you find the best prices for products across major Ghanaian e-commerce platforms and international stores. Features AI-powered image recognition, advanced search capabilities, price alerts, and wishlist management.
+<img width="1866" height="945" alt="image" src="https://github.com/user-attachments/assets/f03c127f-86c0-49f6-9f1c-a4935c678ee3" />
+<img width="1873" height="947" alt="image" src="https://github.com/user-attachments/assets/2f10c768-26e3-4edc-9287-efeb2598128d" />
+<img width="1859" height="948" alt="image" src="https://github.com/user-attachments/assets/cb00e09e-9086-40f2-88f5-0c8dc4b10f32" />
+<img width="1876" height="940" alt="image" src="https://github.com/user-attachments/assets/e321725d-3a48-44f8-8cb9-4257685b7efc" />
 
 ## Features
 
