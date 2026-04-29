@@ -6,7 +6,7 @@ A comprehensive web application that helps you find the best prices for products
 
 ## Features
 
-### 🔍 **Multi-Platform Search**
+### **Multi-Platform Search**
 - **Local Stores**: Jumia, Melcom, CompuGhana
 - **International**: Amazon
 - **Real-time Scraping**: Live price comparison across all platforms
