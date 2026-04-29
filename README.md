@@ -2,6 +2,8 @@
 
 A comprehensive web application that helps you find the best prices for products across major Ghanaian e-commerce platforms and international stores. Features AI-powered image recognition, advanced search capabilities, price alerts, and wishlist management.
 
+**Access The Site Here:** https://pic2price.onrender.com
+
 ## Features
 
 ### 🔍 **Multi-Platform Search**
